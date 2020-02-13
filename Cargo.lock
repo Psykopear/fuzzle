@@ -221,13 +221,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "druid-launcher"
-version = "0.1.0"
-dependencies = [
- "druid 0.5.0 (git+https://github.com/xi-editor/druid.git)",
-]
-
-[[package]]
 name = "druid-shell"
 version = "0.5.0"
 source = "git+https://github.com/xi-editor/druid.git#3dd3c0ce9924aebf7f06a54b24dcf841ac29a9d4"
@@ -603,6 +596,13 @@ version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "arrayvec 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "launcherrr"
+version = "0.1.0"
+dependencies = [
+ "druid 0.5.0 (git+https://github.com/xi-editor/druid.git)",
 ]
 
 [[package]]
