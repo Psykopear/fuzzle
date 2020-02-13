@@ -1,0 +1,3 @@
+[submodule "druid"]
+	path = druid
+	url = git@github.com:xi-editor/druid.git
