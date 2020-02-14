@@ -8,7 +8,7 @@ use widgets::{AutoTextBox, Icon};
 enum Apps {
     Firefox,
     Chrome,
-    Terminal
+    Terminal,
 }
 
 fn icon(app: Apps) -> impl Widget<String> {

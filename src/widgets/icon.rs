@@ -5,7 +5,7 @@ use druid::{
 };
 
 pub struct Icon {
-    image_data: Vec<u8>
+    image_data: Vec<u8>,
 }
 
 impl Icon {
