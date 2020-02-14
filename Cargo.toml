@@ -7,4 +7,8 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-druid = { path = "./druid/druid", version = "0.5" }
+druid = { path = "./druid/druid", version = "0.5", features = ["svg"] }
+# image = "0.23.0"
+# lodepng = "2.5.0"
+png = "0.15.3"
+# druid = { git = "https://github.com/xi-editor/druid.git", version = "0.5" }
