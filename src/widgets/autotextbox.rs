@@ -56,7 +56,7 @@ impl AutoTextBox {
     /// Calculate the PietTextLayout from the given text, font, and font size
     fn get_layout(&self, piet_text: &mut PietText, text: &str, env: &Env) -> PietTextLayout {
         let font_name = env.get(theme::FONT_NAME);
-        let font_size = env.get(theme::TEXT_SIZE_NORMAL);
+        let font_size = env.get(theme::TEXT_SIZE_LARGE);
         // TODO: caching of both the format and the layout
         let font = piet_text
             .new_font_by_name(font_name, font_size)
@@ -212,14 +212,18 @@ impl Widget<String> for AutoTextBox {
                 if *id == self.cursor_timer {
                     self.cursor_on = !self.cursor_on;
                     ctx.request_paint();
-                    let deadline = Instant::now() + Duration::from_millis(500);
+                    let deadline = Instant::now()
+                        + if self.cursor_on {
+                            Duration::from_millis(1000)
+                        } else {
+                            Duration::from_millis(500)
+                        };
                     self.cursor_timer = ctx.request_timer(deadline);
                 }
             }
             Event::Command(ref cmd)
-                if ctx.has_focus()
-                    && (cmd.selector == druid::commands::COPY
-                        || cmd.selector == druid::commands::CUT) =>
+                if cmd.selector == druid::commands::COPY
+                    || cmd.selector == druid::commands::CUT =>
             {
                 if let Some(text) = data.slice(self.selection.range()) {
                     Application::clipboard().put_string(text);
@@ -355,21 +359,13 @@ impl Widget<String> for AutoTextBox {
 
         self.selection = self.selection.constrain_to(content);
 
-        let font_size = env.get(theme::TEXT_SIZE_NORMAL);
+        let font_size = env.get(theme::TEXT_SIZE_LARGE);
         let height = env.get(theme::BORDERED_WIDGET_HEIGHT);
         let background_color = env.get(theme::BACKGROUND_LIGHT);
         let selection_color = env.get(theme::SELECTION_COLOR);
         let text_color = env.get(theme::LABEL_COLOR);
         let placeholder_color = env.get(theme::PLACEHOLDER_COLOR);
         let cursor_color = env.get(theme::CURSOR_COLOR);
-
-        let has_focus = paint_ctx.has_focus();
-
-        let border_color = if has_focus {
-            env.get(theme::PRIMARY_LIGHT)
-        } else {
-            env.get(theme::BORDER_DARK)
-        };
 
         // Paint the background
         let clip_rect = RoundedRect::from_origin_size(
@@ -422,7 +418,7 @@ impl Widget<String> for AutoTextBox {
                 rc.draw_text(&text_layout, text_pos, color);
 
                 // Paint the cursor if focused and there's no selection
-                if has_focus && self.cursor_on && self.selection.is_caret() {
+                if self.cursor_on && self.selection.is_caret() {
                     let cursor_x = self.x_for_offset(&text_layout, self.cursor());
                     let xy = text_pos + Vec2::new(cursor_x, 2. - font_size);
                     let x2y2 = xy + Vec2::new(0., font_size + 2.);
@@ -433,9 +429,6 @@ impl Widget<String> for AutoTextBox {
                 Ok(())
             })
             .unwrap();
-
-        // Paint the border
-        paint_ctx.stroke(clip_rect, &border_color, BORDER_WIDTH);
     }
 }
 
@@ -501,4 +494,3 @@ mod tests {
         assert_eq!(data, String::from(""));
     }
 }
-
