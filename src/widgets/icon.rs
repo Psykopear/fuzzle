@@ -64,7 +64,8 @@ impl<T: Data> Widget<T> for Icon<T> {
         _data: &T,
         _env: &Env,
     ) -> Size {
-        bc.max()
+        // bc.max()
+        bc.constrain(Size::new(self.width as f64, self.height as f64))
     }
 
     fn paint(&mut self, paint_ctx: &mut PaintCtx, _data: &T, _env: &Env) {

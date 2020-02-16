@@ -51,11 +51,13 @@ fn make_ui() -> impl Widget<AppState> {
                     Flex::column()
                         .with_child(
                             Label::new(|item: &SearchResult, _env: &_| item.name.clone())
+                                .color(Color::rgb8(0xc2, 0xc2, 0xc2))
                                 .text_align(UnitPoint::LEFT),
                             1.0,
                         )
                         .with_child(
                             Label::new(|item: &SearchResult, _env: &_| item.description.clone())
+                            .color(Color::rgb8(0x72, 0x72, 0x72))
                                 .text_align(UnitPoint::LEFT),
                             1.0,
                         ),
@@ -89,7 +91,7 @@ fn main() -> Result<(), PlatformError> {
             SearchResult {
                 icon_path: String::from("/home/docler/src/launcherrr/src/assets/chrome.png"),
                 name: String::from("Chrome"),
-                description: String::from("A slightly evilish web browser"),
+                description: String::from("A privacy oriented web browser"),
                 command: String::from("/usr/bin/google-chrome-stable"),
             },
             SearchResult {
@@ -111,7 +113,8 @@ fn main() -> Result<(), PlatformError> {
                 theme::WINDOW_BACKGROUND_COLOR,
                 Color::rgb8(0x39, 0x3d, 0x40),
             );
-            env.set(theme::LABEL_COLOR, Color::rgb8(0xa2, 0xa2, 0xa2));
+            env.set(theme::LABEL_COLOR, Color::rgb8(0xf2, 0xf2, 0xf2));
+            env.set(theme::LABEL_SECONDARY_COLOR, Color::rgb8(0xa2, 0xa2, 0xa2));
             env.set(theme::BACKGROUND_LIGHT, Color::rgb8(0x39, 0x3d, 0x40));
         })
         .use_simple_logger()
