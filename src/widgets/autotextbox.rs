@@ -178,11 +178,17 @@ impl AutoTextBox {
 impl Widget<String> for AutoTextBox {
     #[allow(clippy::cognitive_complexity)]
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut String, env: &Env) {
+        println!("{}", &data);
         // Guard against external changes in data?
         self.selection = self.selection.constrain_to(data);
 
         let mut text_layout = self.get_layout(&mut ctx.text(), &data, env);
-        ctx.request_focus();
+
+        // Ensure this widget always has focus
+        if !ctx.has_focus() {
+            ctx.request_focus();
+        }
+
         match event {
             Event::MouseDown(mouse) => {
                 ctx.set_active(true);
