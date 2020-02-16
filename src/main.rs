@@ -1,15 +1,12 @@
 use druid::piet::UnitPoint;
-use druid::widget::{Align, Container, Flex, Label, List, ListIter, Padding, WidgetExt};
+use druid::widget::{Align, Flex, Label, List, Padding, WidgetExt};
 use druid::{
-    theme, AppLauncher, Color, Data, Lens, LensExt, LocalizedString, PlatformError, Widget,
-    WindowDesc,
+    theme, AppLauncher, Color, Data, Lens, LocalizedString, PlatformError, Widget, WindowDesc,
 };
 use std::sync::Arc;
-use std::io::BufReader;
 
 mod widgets;
-use widgets::{AutoTextBox};
-// use widgets::{AutoTextBox, Icon};
+use widgets::{AutoTextBox, Icon};
 
 #[derive(Clone, Data, PartialEq)]
 struct SearchResult {
@@ -36,33 +33,23 @@ impl Data for AppState {
     }
 }
 
-// fn icon(app: Apps) -> impl Widget<String> {
-//     let data: &[u8] = match app {
-//         Apps::Firefox => include_bytes!("assets/firefox.png"),
-//         Apps::Chrome => include_bytes!("assets/chrome.png"),
-//         Apps::Terminal => include_bytes!("assets/terminal.png"),
-//     };
-//     Icon::new(data.to_vec())
-// }
-
 fn make_ui() -> impl Widget<AppState> {
     Flex::column()
-        .with_child(AutoTextBox::new().lens(AppState::input_text), 1.5)
+        .with_child(AutoTextBox::new().lens(AppState::input_text), 1.)
         .with_child(
             List::new(|| {
                 Padding::new(
-                    (20., 0., 0., 0.),
+                    (25., 0., 0., 0.),
                     Flex::row()
-                    // .with_child(Icon::new(|item: &SearchResult| {
-                    //     let file = std::fs::File::open(item.icon_path).unwrap();
-                    //     let buffer: &[u8] = BufReader::new(file).buffer();
-                    //     buffer
-                    // }), 1.)
+                        .with_child(
+                            Icon::new(|item: &SearchResult, _env: &_| item.icon_path.clone()),
+                            1.,
+                        )
                         .with_child(
                             Flex::column()
                                 .with_child(
                                     Align::vertical(
-                                        UnitPoint::LEFT,
+                                        UnitPoint::BOTTOM_LEFT,
                                         Label::new(|item: &SearchResult, _env: &_| {
                                             item.name.clone()
                                         }),
@@ -71,19 +58,19 @@ fn make_ui() -> impl Widget<AppState> {
                                 )
                                 .with_child(
                                     Align::vertical(
-                                        UnitPoint::LEFT,
+                                        UnitPoint::BOTTOM_LEFT,
                                         Label::new(|item: &SearchResult, _env: &_| {
                                             item.description.clone()
                                         }),
                                     ),
                                     1.0,
                                 ),
-                            3.,
+                            8.,
                         ),
                 )
             })
             .lens(AppState::search_results),
-            1.0,
+            3.0,
         )
 }
 
@@ -96,6 +83,12 @@ fn main() -> Result<(), PlatformError> {
         // Add some example results so I can buil the UI first
         // and work on the logic later
         search_results: Arc::new(vec![
+            // SearchResult {
+            //     icon_path: String::from("/home/docler/src/launcherrr/src/assets/test.png"),
+            //     name: String::from("Test"),
+            //     description: String::from("A test entry"),
+            //     command: String::from("/usr/bin/ls"),
+            // },
             SearchResult {
                 icon_path: String::from("/home/docler/src/launcherrr/src/assets/firefox.png"),
                 name: String::from("Firefox"),
@@ -127,48 +120,13 @@ fn main() -> Result<(), PlatformError> {
                 theme::WINDOW_BACKGROUND_COLOR,
                 Color::rgb8(0x39, 0x3d, 0x40),
             );
+            env.set(
+                theme::LABEL_COLOR,
+                Color::rgb8(0xa2, 0xa2, 0xa2),
+            );
             env.set(theme::BACKGROUND_LIGHT, Color::rgb8(0x39, 0x3d, 0x40));
         })
         .use_simple_logger()
         .launch(data)?;
     Ok(())
 }
-// enum Apps {
-//     Firefox,
-//     Chrome,
-//     Terminal,
-// }
-
-// fn icon(app: Apps) -> impl Widget<String> {
-//     let data: &[u8] = match app {
-//         Apps::Firefox => include_bytes!("assets/firefox.png"),
-//         Apps::Chrome => include_bytes!("assets/chrome.png"),
-//         Apps::Terminal => include_bytes!("assets/terminal.png"),
-//     };
-//     Icon::new(data.to_vec())
-// }
-
-// fn entry(app: Apps) -> impl Widget<String> {
-//     let text = match app {
-//         Apps::Firefox => "Firefox",
-//         Apps::Chrome => "Chrome",
-//         Apps::Terminal => "Terminal",
-//     };
-
-//     let label = Align::vertical(UnitPoint::LEFT, Label::new(text));
-//     Padding::new(
-//         (20., 0., 0., 0.),
-//         Flex::row()
-//             .with_child(Padding::new((10., 10., 10., 10.), icon(app)), 0.14)
-//             .with_child(label, 1.0),
-//     )
-// }
-
-// fn ui_builder() -> impl Widget<String> {
-//     let input = AutoTextBox::new();
-//     Flex::column()
-//         .with_child(input, 1.5)
-//         .with_child(Align::centered(entry(Apps::Firefox)), 1.0)
-//         .with_child(Align::centered(entry(Apps::Chrome)), 1.0)
-//         .with_child(Align::centered(entry(Apps::Terminal)), 1.0)
-// }

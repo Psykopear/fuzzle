@@ -178,7 +178,6 @@ impl AutoTextBox {
 impl Widget<String> for AutoTextBox {
     #[allow(clippy::cognitive_complexity)]
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut String, env: &Env) {
-        println!("{}", &data);
         // Guard against external changes in data?
         self.selection = self.selection.constrain_to(data);
 

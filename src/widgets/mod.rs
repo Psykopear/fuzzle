@@ -1,5 +1,5 @@
 mod autotextbox;
-// mod icon;
+mod icon;
 
 pub use autotextbox::AutoTextBox;
-// pub use icon::Icon;
+pub use icon::Icon;
