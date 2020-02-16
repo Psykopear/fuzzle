@@ -1,5 +1,5 @@
 use druid::piet::UnitPoint;
-use druid::widget::{Align, Flex, Label, List, Padding, WidgetExt};
+use druid::widget::{Align, Flex, Label, List, Padding, Scroll, WidgetExt};
 use druid::{
     theme, AppLauncher, Color, Data, Lens, LocalizedString, PlatformError, Widget, WindowDesc,
 };
@@ -34,61 +34,52 @@ impl Data for AppState {
 }
 
 fn make_ui() -> impl Widget<AppState> {
-    Flex::column()
-        .with_child(AutoTextBox::new().lens(AppState::input_text), 1.)
-        .with_child(
-            List::new(|| {
-                Padding::new(
-                    (25., 0., 0., 0.),
-                    Flex::row()
+    let mut col = Flex::column();
+
+    let autotextbox = AutoTextBox::new().lens(AppState::input_text);
+    col.add_child(autotextbox, 1.);
+
+    let element = || {
+        Padding::new(
+            (25., 15., 15., 15.),
+            Flex::row()
+                .with_child(
+                    Icon::new(|item: &SearchResult, _env: &_| item.icon_path.clone()),
+                    1.,
+                )
+                .with_child(
+                    Flex::column()
                         .with_child(
-                            Icon::new(|item: &SearchResult, _env: &_| item.icon_path.clone()),
-                            1.,
+                            Label::new(|item: &SearchResult, _env: &_| item.name.clone())
+                                .text_align(UnitPoint::LEFT),
+                            1.0,
                         )
                         .with_child(
-                            Flex::column()
-                                .with_child(
-                                    Align::vertical(
-                                        UnitPoint::BOTTOM_LEFT,
-                                        Label::new(|item: &SearchResult, _env: &_| {
-                                            item.name.clone()
-                                        }),
-                                    ),
-                                    1.0,
-                                )
-                                .with_child(
-                                    Align::vertical(
-                                        UnitPoint::BOTTOM_LEFT,
-                                        Label::new(|item: &SearchResult, _env: &_| {
-                                            item.description.clone()
-                                        }),
-                                    ),
-                                    1.0,
-                                ),
-                            8.,
+                            Label::new(|item: &SearchResult, _env: &_| item.description.clone())
+                                .text_align(UnitPoint::LEFT),
+                            1.0,
                         ),
-                )
-            })
-            .lens(AppState::search_results),
-            3.0,
+                    8.,
+                ),
         )
+        .fix_height(75.)
+    };
+
+    let searchresults = List::new(element).lens(AppState::search_results);
+    col.add_child(searchresults, 3.);
+
+    col
 }
 
 fn main() -> Result<(), PlatformError> {
     let main_window = WindowDesc::new(make_ui)
-        .window_size((550., 280.00))
+        .window_size((550., 320.00))
         .title(LocalizedString::new("launcherrr").with_placeholder(String::from("launcherrr")));
     let data = AppState {
         input_text: "".into(),
-        // Add some example results so I can buil the UI first
+        // Add some example results so I can build the UI first
         // and work on the logic later
         search_results: Arc::new(vec![
-            // SearchResult {
-            //     icon_path: String::from("/home/docler/src/launcherrr/src/assets/test.png"),
-            //     name: String::from("Test"),
-            //     description: String::from("A test entry"),
-            //     command: String::from("/usr/bin/ls"),
-            // },
             SearchResult {
                 icon_path: String::from("/home/docler/src/launcherrr/src/assets/firefox.png"),
                 name: String::from("Firefox"),
@@ -102,10 +93,10 @@ fn main() -> Result<(), PlatformError> {
                 command: String::from("/usr/bin/google-chrome-stable"),
             },
             SearchResult {
-                icon_path: String::from("/home/docler/src/launcherrr/src/assets/terminal.png"),
-                name: String::from("Alacritty"),
-                description: String::from("GPU accelerated terminal in Rust"),
-                command: String::from("/usr/bin/alacritty"),
+                icon_path: String::from("/home/docler/src/launcherrr/src/assets/godot.png"),
+                name: String::from("Godot"),
+                description: String::from("Open source game engine"),
+                command: String::from("/usr/bin/godot"),
             },
         ]),
     };
@@ -120,10 +111,7 @@ fn main() -> Result<(), PlatformError> {
                 theme::WINDOW_BACKGROUND_COLOR,
                 Color::rgb8(0x39, 0x3d, 0x40),
             );
-            env.set(
-                theme::LABEL_COLOR,
-                Color::rgb8(0xa2, 0xa2, 0xa2),
-            );
+            env.set(theme::LABEL_COLOR, Color::rgb8(0xa2, 0xa2, 0xa2));
             env.set(theme::BACKGROUND_LIGHT, Color::rgb8(0x39, 0x3d, 0x40));
         })
         .use_simple_logger()
