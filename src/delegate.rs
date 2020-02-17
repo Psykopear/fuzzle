@@ -1,5 +1,7 @@
 use druid::{AppDelegate, Command, DelegateCtx, Env, Event, Target, WindowId};
 
+use glob::glob;
+
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 use ini::Ini;
@@ -23,7 +25,7 @@ impl AppDelegate<AppState> for Delegate {
         let paths = std::fs::read_dir("/usr/share/applications/").unwrap();
         for path in paths {
             let path = path.unwrap().path();
-            if search_results.len() < 5 && !path.is_dir() {
+            if search_results.len() < 4 && !path.is_dir() {
                 match matcher.fuzzy_match(path.to_str().unwrap(), &data.input_text) {
                     Some(_) => (),
                     None => continue,
@@ -49,7 +51,11 @@ impl AppDelegate<AppState> for Delegate {
                     Some(command) => command.to_string(),
                     None => continue,
                 };
-                let icon_path = format!("/home/docler/src/launcherrr/src/assets/{}.png", icon);
+                let mut icon_path = String::new();
+                for entry in glob(&format!("/usr/share/icons/hicolor/48x48/**/{}.png", icon)).expect("Failed to read glob pattern") {
+                    icon_path = entry.unwrap().to_str().unwrap().to_string();
+                    break;
+                }
                 let res = SearchResult {
                     name,
                     description,
