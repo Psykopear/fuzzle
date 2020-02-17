@@ -1,6 +1,7 @@
 use druid::{AppDelegate, Command, DelegateCtx, Env, Event, Target, WindowId};
 
-use glob::glob;
+// use glob::glob;
+use walkdir::WalkDir;
 
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
@@ -51,11 +52,38 @@ impl AppDelegate<AppState> for Delegate {
                     Some(command) => command.to_string(),
                     None => continue,
                 };
+
+
+                // First search a default theme
                 let mut icon_path = String::new();
-                for entry in glob(&format!("/usr/share/icons/hicolor/48x48/**/{}.png", icon)).expect("Failed to read glob pattern") {
-                    icon_path = entry.unwrap().to_str().unwrap().to_string();
-                    break;
+                for entry in WalkDir::new("/usr/share/icons/hicolor/48x48").into_iter().filter_map(|e| e.ok()) {
+                    if entry.path().file_stem().unwrap() == icon {
+                        icon_path = String::from(entry.path().to_str().unwrap());
+                    }
                 }
+
+                // If we couldn't find the icon, search any theme.
+                // This should be really slow, but it's almost immediate with walkdir.
+                // Still, we can do this better
+                if icon_path.is_empty() {
+                    let mut stop = false;
+                    for icon_theme in std::fs::read_dir("/usr/share/icons/").unwrap() {
+                        let mut icon_theme_path = icon_theme.unwrap().path();
+                        icon_theme_path.push("48x48");
+
+                        for entry in WalkDir::new(icon_theme_path).into_iter().filter_map(|e| e.ok()) {
+                            if entry.path().file_stem().unwrap() == icon {
+                                icon_path = String::from(entry.path().to_str().unwrap());
+                                stop = true;
+                                break;
+                            }
+                        }
+                        if stop {
+                            break;
+                        }
+                    }
+                }
+
                 let res = SearchResult {
                     name,
                     description,
