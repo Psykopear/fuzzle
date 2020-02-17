@@ -9,6 +9,6 @@ edition = "2018"
 [dependencies]
 druid = { path = "./druid/druid", version = "0.5", features = ["svg"] }
 image = "0.23.0"
-# lodepng = "2.5.0"
-png = "0.15.3"
-# druid = { git = "https://github.com/xi-editor/druid.git", version = "0.5" }
+fuzzy-matcher = "0.3.3"
+dirs = "2.0.2"
+rust-ini = "0.15.1"

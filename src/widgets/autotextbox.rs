@@ -1,5 +1,4 @@
 //! A textbox widget that keeps focus.
-
 use std::time::{Duration, Instant};
 
 use druid::{
@@ -25,7 +24,6 @@ const PADDING_LEFT: f64 = 30.;
 const RESET_BLINK: Selector = Selector::new("druid-builtin.reset-textbox-blink");
 
 /// A widget that allows user text input.
-#[derive(Debug, Clone)]
 pub struct AutoTextBox {
     placeholder: String,
     width: f64,

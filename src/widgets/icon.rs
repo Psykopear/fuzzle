@@ -43,19 +43,22 @@ impl<T: Data> Widget<T> for Icon<T> {
                     }
                 };
 
-                let im = image::open(&image_path).unwrap();
-                let (width, height) = im.dimensions();
-                self.width = width as usize;
-                self.height = height as usize;
-                if let Some(buffer) = im.as_rgba8() {
-                    self.image_data = buffer.to_vec();
+                if let Ok(im) = image::open(&image_path) {
+                    let (width, height) = im.dimensions();
+                    self.width = width as usize;
+                    self.height = height as usize;
+                    if let Some(buffer) = im.as_rgba8() {
+                        self.image_data = buffer.to_vec();
+                    };
                 };
             }
             _ => (),
         }
     }
 
-    fn update(&mut self, _ctx: &mut UpdateCtx, _old_data: &T, _data: &T, _env: &Env) {}
+    fn update(&mut self, ctx: &mut UpdateCtx, _old_data: &T, _data: &T, _env: &Env) {
+        ctx.request_pain();
+    }
 
     fn layout(
         &mut self,
@@ -69,20 +72,22 @@ impl<T: Data> Widget<T> for Icon<T> {
     }
 
     fn paint(&mut self, paint_ctx: &mut PaintCtx, _data: &T, _env: &Env) {
-        let size = paint_ctx.size();
-        let image = paint_ctx
-            .make_image(
-                self.width,
-                self.height,
-                &self.image_data.as_slice(),
-                druid::piet::ImageFormat::RgbaSeparate,
-            )
-            .expect("Can't make image");
-        paint_ctx.draw_image(
-            &image,
-            Rect::from_origin_size(Point::ZERO, (self.width as f64, self.height as f64)),
-            InterpolationMode::Bilinear,
-        );
+        // let size = paint_ctx.size();
+        if self.width > 0 && self.height > 0 {
+            let image = paint_ctx
+                .make_image(
+                    self.width,
+                    self.height,
+                    &self.image_data.as_slice(),
+                    druid::piet::ImageFormat::RgbaSeparate,
+                )
+                .expect("Can't make image");
+            paint_ctx.draw_image(
+                &image,
+                Rect::from_origin_size(Point::ZERO, (self.width as f64, self.height as f64)),
+                InterpolationMode::Bilinear,
+            );
+        }
     }
 }
 
