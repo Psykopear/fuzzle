@@ -1,4 +1,4 @@
-use druid::{AppDelegate, Command, DelegateCtx, Env, Event, Target, WindowId};
+use druid::{AppDelegate, Command, DelegateCtx, Env, Event, KeyCode, Target, WindowId};
 
 // use glob::glob;
 use walkdir::WalkDir;
@@ -21,6 +21,20 @@ impl AppDelegate<AppState> for Delegate {
         data: &mut AppState,
         _e: &Env,
     ) -> Option<Event> {
+        match event {
+            Event::KeyDown(key_event) => {
+                if key_event.key_code == KeyCode::Return {
+                    let command = data.search_results.first().unwrap().command.clone();
+                    let command = command.split_whitespace().next().unwrap();
+                    match std::process::Command::new(command).spawn() {
+                        // TODO: Ok, maybe find a nicer way to exit here, but this works
+                        Ok(_) => panic!(),
+                        Err(_) => return None
+                    };
+                }
+            }
+            _ => (),
+        };
         let matcher = SkimMatcherV2::default();
         let mut search_results = vec![];
         let paths = std::fs::read_dir("/usr/share/applications/").unwrap();
@@ -53,10 +67,12 @@ impl AppDelegate<AppState> for Delegate {
                     None => continue,
                 };
 
-
                 // First search a default theme
                 let mut icon_path = String::new();
-                for entry in WalkDir::new("/usr/share/icons/hicolor/48x48").into_iter().filter_map(|e| e.ok()) {
+                for entry in WalkDir::new("/usr/share/icons/hicolor/48x48")
+                    .into_iter()
+                    .filter_map(|e| e.ok())
+                {
                     if entry.path().file_stem().unwrap() == icon {
                         icon_path = String::from(entry.path().to_str().unwrap());
                     }
@@ -71,7 +87,10 @@ impl AppDelegate<AppState> for Delegate {
                         let mut icon_theme_path = icon_theme.unwrap().path();
                         icon_theme_path.push("48x48");
 
-                        for entry in WalkDir::new(icon_theme_path).into_iter().filter_map(|e| e.ok()) {
+                        for entry in WalkDir::new(icon_theme_path)
+                            .into_iter()
+                            .filter_map(|e| e.ok())
+                        {
                             if entry.path().file_stem().unwrap() == icon {
                                 icon_path = String::from(entry.path().to_str().unwrap());
                                 stop = true;
