@@ -121,10 +121,12 @@ impl Delegate {
                         }
                     };
                     self.search_results.push(res);
+                } else {
+                    go = false;
                 }
             } else {
-                go = false
-            };
+                go = false;
+            }
         }
     }
 }
@@ -152,23 +154,19 @@ impl AppDelegate<AppState> for Delegate {
                         Ok(_) => panic!(),
                         Err(_) => return None,
                     };
-                }
-
-                match key_event {
-                    k_e if (HotKey::new(SysMods::Cmd, "j")).matches(k_e) => {
-                        if data.selected_line < 6.min(data.search_results.len() - 1) {
-                            data.selected_line += 1;
-                        }
-                        return None;
+                };
+                if key_event.key_code == KeyCode::ArrowDown || (HotKey::new(SysMods::Cmd, "j")).matches(key_event){
+                    if data.selected_line < 6.min(data.search_results.len() - 1) {
+                        data.selected_line += 1;
                     }
-                    k_e if (HotKey::new(SysMods::Cmd, "k")).matches(k_e) => {
-                        if data.selected_line > 0 {
-                            data.selected_line -= 1;
-                        }
-                        return None;
+                    return None;
+                };
+                if key_event.key_code == KeyCode::ArrowUp  || (HotKey::new(SysMods::Cmd, "k")).matches(key_event){
+                    if data.selected_line > 0 {
+                        data.selected_line -= 1;
                     }
-                    _ => {}
-                }
+                    return None;
+                };
             }
             _ => (),
         };
