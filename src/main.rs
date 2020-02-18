@@ -17,9 +17,15 @@ fn list_element() -> impl Widget<SearchResult> {
     EnvScope::new(
         |env: &mut Env, data: &SearchResult| {
             if data.selected {
-                env.set(theme::HIGHLIGHT_COLOR, Color::rgba8(0xff, 0xff, 0xff, 0x22));
+                env.set(
+                    theme::CONTAINER_BACKGROUND_COLOR,
+                    Color::rgba8(0xff, 0xff, 0xff, 0x22),
+                );
             } else {
-                env.set(theme::HIGHLIGHT_COLOR, Color::rgba8(0xff, 0xff, 0xff, 0x00));
+                env.set(
+                    theme::CONTAINER_BACKGROUND_COLOR,
+                    Color::rgba8(0xff, 0xff, 0xff, 0x00),
+                );
             }
         },
         Container::new(

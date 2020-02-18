@@ -3,9 +3,7 @@ use druid::{
 };
 use std::collections::HashMap;
 use std::fs;
-use std::path::Path;
 
-// use glob::glob;
 use walkdir::WalkDir;
 
 use fuzzy_matcher::skim::SkimMatcherV2;
@@ -43,7 +41,7 @@ impl Delegate {
         let mut paths = self.paths.iter();
         while go {
             if let Some(path) = paths.next() {
-                if self.search_results.len() < 3 {
+                if self.search_results.len() < 5 {
                     match self.matcher.fuzzy_match(path, &data.input_text) {
                         Some(_) => (),
                         None => continue,
@@ -158,7 +156,7 @@ impl AppDelegate<AppState> for Delegate {
 
                 match key_event {
                     k_e if (HotKey::new(SysMods::Cmd, "j")).matches(k_e) => {
-                        if data.selected_line < 2.min(data.search_results.len() - 1) {
+                        if data.selected_line < 6.min(data.search_results.len() - 1) {
                             data.selected_line += 1;
                         }
                         return None;
