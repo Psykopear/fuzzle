@@ -1,4 +1,4 @@
-use druid::{AppDelegate, Command, DelegateCtx, Env, Event, KeyCode, Target, WindowId};
+use druid::{AppDelegate, Command, SysMods, HotKey, DelegateCtx, Env, Event, KeyCode, Target, WindowId};
 
 // use glob::glob;
 use walkdir::WalkDir;
@@ -24,13 +24,29 @@ impl AppDelegate<AppState> for Delegate {
         match event {
             Event::KeyDown(key_event) => {
                 if key_event.key_code == KeyCode::Return {
-                    let command = data.search_results.first().unwrap().command.clone();
+                    let command = data.search_results[data.selected_line].command.clone();
                     let command = command.split_whitespace().next().unwrap();
                     match std::process::Command::new(command).spawn() {
                         // TODO: Ok, maybe find a nicer way to exit here, but this works
                         Ok(_) => panic!(),
-                        Err(_) => return None
+                        Err(_) => return None,
                     };
+                }
+
+                match key_event {
+                    k_e if (HotKey::new(SysMods::Cmd, "j")).matches(k_e) => {
+                        if data.selected_line < 2.min(data.search_results.len() - 1) {
+                            data.selected_line += 1;
+                        }
+                        return None;
+                    }
+                    k_e if (HotKey::new(SysMods::Cmd, "k")).matches(k_e) => {
+                        if data.selected_line > 0 {
+                        data.selected_line -= 1;
+                        }
+                        return None;
+                    }
+                    _ => {}
                 }
             }
             _ => (),
@@ -40,7 +56,7 @@ impl AppDelegate<AppState> for Delegate {
         let paths = std::fs::read_dir("/usr/share/applications/").unwrap();
         for path in paths {
             let path = path.unwrap().path();
-            if search_results.len() < 4 && !path.is_dir() {
+            if search_results.len() < 3 && !path.is_dir() {
                 match matcher.fuzzy_match(path.to_str().unwrap(), &data.input_text) {
                     Some(_) => (),
                     None => continue,
@@ -108,6 +124,7 @@ impl AppDelegate<AppState> for Delegate {
                     description,
                     icon_path,
                     command,
+                    selected: search_results.len() == data.selected_line,
                 };
                 search_results.push(res);
             };

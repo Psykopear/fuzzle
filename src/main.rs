@@ -1,8 +1,8 @@
 use druid::piet::UnitPoint;
-use druid::widget::{Flex, Label, List, Padding, WidgetExt};
-use druid::{
-    theme, AppLauncher, Color,
-    LocalizedString, PlatformError, Widget, WindowDesc
+use druid::widget::{Container, EnvScope, Flex, Label, List, ListIter, Padding, WidgetExt};
+// use druid::widget::{Flex, List, WidgetExt};
+use druid::{Env,
+    theme, AppLauncher, Color, LocalizedString, PlatformError, Widget, WidgetPod, WindowDesc,
 };
 
 use std::sync::Arc;
@@ -16,42 +16,51 @@ use state::{AppState, SearchResult};
 mod delegate;
 use delegate::Delegate;
 
+fn list_element() -> impl Widget<SearchResult> {
+    EnvScope::new(
+        |env: &mut Env, data: &SearchResult| {
+            if data.selected {
+                env.set(theme::HIGHLIGHT_COLOR, Color::rgba8(0xff, 0xff, 0xff, 0x22));
+            } else {
+                env.set(theme::HIGHLIGHT_COLOR, Color::rgba8(0xff, 0xff, 0xff, 0x00));
+            }
+        },
+        Container::new(
+            Padding::new(
+                (25., 15., 15., 15.),
+                Flex::row()
+                    .with_child(
+                        Icon::new(|item: &SearchResult, _env: &_| item.icon_path.clone()),
+                        1.,
+                    )
+                    .with_child(
+                        Flex::column()
+                            .with_child(
+                                Label::new(|item: &SearchResult, _env: &_| item.name.clone())
+                                    .color(Color::rgb8(0xc2, 0xc2, 0xc2))
+                                    .text_align(UnitPoint::LEFT),
+                                1.0,
+                            )
+                            .with_child(
+                                Label::new(|item: &SearchResult, _env: &_| {
+                                    item.description.clone()
+                                })
+                                .color(Color::rgb8(0x72, 0x72, 0x72))
+                                .text_align(UnitPoint::LEFT),
+                                1.0,
+                            ),
+                        8.,
+                    ),
+            )
+            .fix_height(75.),
+        ),
+    )
+}
+
 fn make_ui() -> impl Widget<AppState> {
     Flex::column()
         .with_child(AutoTextBox::new().lens(AppState::input_text), 1.)
-        .with_child(
-            List::new(|| {
-                Padding::new(
-                    (25., 15., 15., 15.),
-                    Flex::row()
-                        .with_child(
-                            Icon::new(|item: &SearchResult, _env: &_| item.icon_path.clone()),
-                            1.,
-                        )
-                        .with_child(
-                            Flex::column()
-                                .with_child(
-                                    Label::new(|item: &SearchResult, _env: &_| item.name.clone())
-                                        .color(Color::rgb8(0xc2, 0xc2, 0xc2))
-                                        .text_align(UnitPoint::LEFT),
-                                    1.0,
-                                )
-                                .with_child(
-                                    Label::new(|item: &SearchResult, _env: &_| {
-                                        item.description.clone()
-                                    })
-                                    .color(Color::rgb8(0x72, 0x72, 0x72))
-                                    .text_align(UnitPoint::LEFT),
-                                    1.0,
-                                ),
-                            8.,
-                        ),
-                )
-                .fix_height(75.)
-            })
-            .lens(AppState::search_results),
-            3.,
-        )
+        .with_child(List::new(list_element).lens(AppState::search_results), 3.)
 }
 
 fn main() -> Result<(), PlatformError> {
@@ -61,6 +70,7 @@ fn main() -> Result<(), PlatformError> {
     let data = AppState {
         input_text: "".into(),
         search_results: Arc::new(vec![]),
+        selected_line: 0,
     };
 
     AppLauncher::with_window(main_window)

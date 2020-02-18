@@ -182,9 +182,9 @@ impl Widget<String> for AutoTextBox {
         let mut text_layout = self.get_layout(&mut ctx.text(), &data, env);
 
         // Ensure this widget always has focus
-        if !ctx.has_focus() {
-            ctx.request_focus();
-        }
+        // if !ctx.has_focus() {
+        ctx.request_focus();
+        // }
 
         match event {
             Event::MouseDown(mouse) => {
