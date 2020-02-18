@@ -1,9 +1,6 @@
 use druid::piet::UnitPoint;
-use druid::widget::{Container, EnvScope, Flex, Label, List, ListIter, Padding, WidgetExt};
-// use druid::widget::{Flex, List, WidgetExt};
-use druid::{Env,
-    theme, AppLauncher, Color, LocalizedString, PlatformError, Widget, WidgetPod, WindowDesc,
-};
+use druid::widget::{Container, EnvScope, Flex, Label, List, Padding, WidgetExt};
+use druid::{theme, AppLauncher, Color, Env, LocalizedString, PlatformError, Widget, WindowDesc};
 
 use std::sync::Arc;
 
@@ -74,7 +71,7 @@ fn main() -> Result<(), PlatformError> {
     };
 
     AppLauncher::with_window(main_window)
-        .delegate(Delegate)
+        .delegate(Delegate::new())
         .configure_env(|env, _| {
             env.set(theme::BORDERED_WIDGET_HEIGHT, 100.);
             env.set(theme::TEXT_SIZE_NORMAL, 20.);
