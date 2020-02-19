@@ -16,7 +16,6 @@ use crate::{AppState, SearchResult};
 pub struct Delegate {
     matcher: SkimMatcherV2,
     cache: HashMap<String, SearchResult>,
-    search_results: Vec<SearchResult>,
     paths: Vec<String>,
 }
 
@@ -25,7 +24,6 @@ impl Delegate {
         Self {
             matcher: SkimMatcherV2::default(),
             cache: HashMap::new(),
-            search_results: vec![],
             paths: fs::read_dir("/usr/share/applications/")
                 .unwrap()
                 // TODO: seriously?
@@ -34,21 +32,21 @@ impl Delegate {
         }
     }
 
-    fn search(&mut self, data: &AppState) {
+    fn search(&mut self, data: &AppState) -> Vec<SearchResult> {
         // Reset search results
-        self.search_results = vec![];
+        let mut search_results = vec![];
         let mut go = true;
         let mut paths = self.paths.iter();
         while go {
             if let Some(path) = paths.next() {
-                if self.search_results.len() < 3 {
+                if search_results.len() < 3 {
                     match self.matcher.fuzzy_match(path, &data.input_text) {
                         Some(_) => (),
                         None => continue,
                     };
                     let res = match self.cache.get(path) {
                         Some(search_result) => SearchResult {
-                            selected: self.search_results.len() == data.selected_line,
+                            selected: search_results.len() == data.selected_line,
                             ..search_result.clone()
                         },
                         None => {
@@ -116,18 +114,19 @@ impl Delegate {
                                 description,
                                 icon_path,
                                 command,
-                                selected: self.search_results.len() == data.selected_line,
+                                selected: search_results.len() == data.selected_line,
                             }
                         }
                     };
-                    self.search_results.push(res);
+                    search_results.push(res);
                 } else {
                     go = false;
                 }
             } else {
                 go = false;
             }
-        }
+        };
+        search_results
     }
 }
 
@@ -171,8 +170,8 @@ impl AppDelegate<AppState> for Delegate {
             _ => (),
         };
 
-        self.search(&data);
-        data.search_results = Arc::new(self.search_results.clone());
+        ;
+        data.search_results = Arc::new(self.search(&data));
         Some(event)
     }
 
