@@ -3,6 +3,7 @@ use druid::{
 };
 use std::collections::HashMap;
 use std::fs;
+use std::thread;
 
 use walkdir::WalkDir;
 
@@ -32,100 +33,96 @@ impl Delegate {
         }
     }
 
+    fn populate_cache(&mut self) {
+        // Reset search results
+        for path in &self.paths {
+            let info = Ini::load_from_file(path).unwrap();
+            let section = match info.section(Some("Desktop Entry")) {
+                Some(sec) => sec,
+                None => continue,
+            };
+            let name = match section.get("Name") {
+                Some(name) => name.to_string(),
+                None => continue,
+            };
+            let description = match section.get("Comment") {
+                Some(description) => description.to_string(),
+                None => continue,
+            };
+            let icon = match section.get("Icon") {
+                Some(icon) => icon,
+                None => continue,
+            };
+            let command = match section.get("Exec") {
+                Some(command) => command.to_string(),
+                None => continue,
+            };
+
+            // First search a default theme
+            let mut icon_path = String::new();
+            for entry in WalkDir::new("/usr/share/icons/hicolor/48x48")
+                .into_iter()
+                .filter_map(|e| e.ok())
+            {
+                if entry.path().file_stem().unwrap() == icon {
+                    icon_path = String::from(entry.path().to_str().unwrap());
+                }
+            }
+
+            // // If we couldn't find the icon, search any theme.
+            // // This should be really slow, but it's almost immediate with walkdir.
+            // // Still, we can do this better
+            // if icon_path.is_empty() {
+            //     let mut stop = false;
+            //     for icon_theme in std::fs::read_dir("/usr/share/icons/").unwrap() {
+            //         let mut icon_theme_path = icon_theme.unwrap().path();
+            //         icon_theme_path.push("48x48");
+
+            //         for entry in WalkDir::new(icon_theme_path)
+            //             .into_iter()
+            //             .filter_map(|e| e.ok())
+            //         {
+            //             if entry.path().file_stem().unwrap() == icon {
+            //                 icon_path = String::from(entry.path().to_str().unwrap());
+            //                 stop = true;
+            //                 break;
+            //             }
+            //         }
+            //         if stop {
+            //             break;
+            //         }
+            //     }
+            // };
+
+            self.cache.insert(
+                path.to_string(),
+                SearchResult {
+                    name,
+                    description,
+                    icon_path,
+                    command,
+                    selected: false,
+                },
+            );
+        }
+    }
+
     fn search(&mut self, data: &AppState) -> Vec<SearchResult> {
         // Reset search results
         let mut search_results = vec![];
-        let mut go = true;
-        let mut paths = self.paths.iter();
-        while go {
-            if let Some(path) = paths.next() {
-                if search_results.len() < 3 {
-                    match self.matcher.fuzzy_match(path, &data.input_text) {
-                        Some(_) => (),
-                        None => continue,
-                    };
-                    let res = match self.cache.get(path) {
-                        Some(search_result) => SearchResult {
-                            selected: search_results.len() == data.selected_line,
-                            ..search_result.clone()
-                        },
-                        None => {
-                            let info = Ini::load_from_file(path).unwrap();
-                            let section = match info.section(Some("Desktop Entry")) {
-                                Some(sec) => sec,
-                                None => continue,
-                            };
-                            let name = match section.get("Name") {
-                                Some(name) => name.to_string(),
-                                None => continue,
-                            };
-                            let description = match section.get("Comment") {
-                                Some(description) => description.to_string(),
-                                None => continue,
-                            };
-                            let icon = match section.get("Icon") {
-                                Some(icon) => icon,
-                                None => continue,
-                            };
-                            let command = match section.get("Exec") {
-                                Some(command) => command.to_string(),
-                                None => continue,
-                            };
-
-                            // First search a default theme
-                            let mut icon_path = String::new();
-                            for entry in WalkDir::new("/usr/share/icons/hicolor/48x48")
-                                .into_iter()
-                                .filter_map(|e| e.ok())
-                            {
-                                if entry.path().file_stem().unwrap() == icon {
-                                    icon_path = String::from(entry.path().to_str().unwrap());
-                                }
-                            }
-
-                            // If we couldn't find the icon, search any theme.
-                            // This should be really slow, but it's almost immediate with walkdir.
-                            // Still, we can do this better
-                            if icon_path.is_empty() {
-                                let mut stop = false;
-                                for icon_theme in std::fs::read_dir("/usr/share/icons/").unwrap() {
-                                    let mut icon_theme_path = icon_theme.unwrap().path();
-                                    icon_theme_path.push("48x48");
-
-                                    for entry in WalkDir::new(icon_theme_path)
-                                        .into_iter()
-                                        .filter_map(|e| e.ok())
-                                    {
-                                        if entry.path().file_stem().unwrap() == icon {
-                                            icon_path =
-                                                String::from(entry.path().to_str().unwrap());
-                                            stop = true;
-                                            break;
-                                        }
-                                    }
-                                    if stop {
-                                        break;
-                                    }
-                                }
-                            }
-
-                            SearchResult {
-                                name,
-                                description,
-                                icon_path,
-                                command,
-                                selected: search_results.len() == data.selected_line,
-                            }
-                        }
-                    };
-                    search_results.push(res);
-                } else {
-                    go = false;
-                }
-            } else {
-                go = false;
-            }
-        };
+        for path in &self.paths {
+            match self.matcher.fuzzy_match(path, &data.input_text) {
+                Some(_) => (),
+                None => continue,
+            };
+            if let Some(search_result) = self.cache.get(path) {
+                let res = SearchResult {
+                    selected: search_results.len() == data.selected_line,
+                    ..search_result.clone()
+                };
+                search_results.push(res);
+            };
+        }
         search_results
     }
 }
@@ -154,13 +151,17 @@ impl AppDelegate<AppState> for Delegate {
                         Err(_) => return None,
                     };
                 };
-                if key_event.key_code == KeyCode::ArrowDown || (HotKey::new(SysMods::Cmd, "j")).matches(key_event){
+                if key_event.key_code == KeyCode::ArrowDown
+                    || (HotKey::new(SysMods::Cmd, "j")).matches(key_event)
+                {
                     if data.selected_line < 2.min(data.search_results.len() - 1) {
                         data.selected_line += 1;
                     }
                     return None;
                 };
-                if key_event.key_code == KeyCode::ArrowUp  || (HotKey::new(SysMods::Cmd, "k")).matches(key_event){
+                if key_event.key_code == KeyCode::ArrowUp
+                    || (HotKey::new(SysMods::Cmd, "k")).matches(key_event)
+                {
                     if data.selected_line > 0 {
                         data.selected_line -= 1;
                     }
@@ -169,8 +170,6 @@ impl AppDelegate<AppState> for Delegate {
             }
             _ => (),
         };
-
-        ;
         data.search_results = Arc::new(self.search(&data));
         Some(event)
     }
@@ -186,6 +185,11 @@ impl AppDelegate<AppState> for Delegate {
         false
     }
 
-    fn window_added(&mut self, _i: WindowId, _d: &mut AppState, _e: &Env, _c: &mut DelegateCtx) {}
-    fn window_removed(&mut self, _i: WindowId, _d: &mut AppState, _e: &Env, _c: &mut DelegateCtx) {}
+    fn window_added(&mut self, _i: WindowId, _d: &mut AppState, _e: &Env, _c: &mut DelegateCtx) {
+        // thread::spawn(move || self.populate_cache());
+        self.populate_cache();
+    }
+    fn window_removed(&mut self, _i: WindowId, _d: &mut AppState, _e: &Env, _c: &mut DelegateCtx) {
+        println!("REMOVED");
+    }
 }
