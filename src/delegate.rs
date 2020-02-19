@@ -41,7 +41,7 @@ impl Delegate {
         let mut paths = self.paths.iter();
         while go {
             if let Some(path) = paths.next() {
-                if self.search_results.len() < 5 {
+                if self.search_results.len() < 3 {
                     match self.matcher.fuzzy_match(path, &data.input_text) {
                         Some(_) => (),
                         None => continue,
@@ -156,7 +156,7 @@ impl AppDelegate<AppState> for Delegate {
                     };
                 };
                 if key_event.key_code == KeyCode::ArrowDown || (HotKey::new(SysMods::Cmd, "j")).matches(key_event){
-                    if data.selected_line < 6.min(data.search_results.len() - 1) {
+                    if data.selected_line < 2.min(data.search_results.len() - 1) {
                         data.selected_line += 1;
                     }
                     return None;
