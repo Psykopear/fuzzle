@@ -1,9 +1,9 @@
 use druid::{
     AppDelegate, Command, DelegateCtx, Env, Event, HotKey, KeyCode, SysMods, Target, WindowId,
 };
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-use std::thread;
 
 use walkdir::WalkDir;
 
@@ -14,28 +14,37 @@ use std::sync::Arc;
 
 use crate::{AppState, SearchResult};
 
+#[derive(Serialize, Deserialize)]
 pub struct Delegate {
+    #[serde(skip)]
     matcher: SkimMatcherV2,
     cache: HashMap<String, SearchResult>,
-    paths: Vec<String>,
 }
 
 impl Delegate {
     pub fn new() -> Self {
-        Self {
-            matcher: SkimMatcherV2::default(),
-            cache: HashMap::new(),
-            paths: fs::read_dir("/usr/share/applications/")
-                .unwrap()
-                // TODO: seriously?
-                .map(|p| p.unwrap().path().to_str().unwrap().to_string())
-                .collect(),
+        if let Ok(file) = fs::File::open("/tmp/launcherrr") {
+            let delegate: Delegate = serde_json::from_reader(file).unwrap();
+            Self {
+                matcher: SkimMatcherV2::default(),
+                cache: delegate.cache,
+            }
+        } else {
+            Self {
+                matcher: SkimMatcherV2::default(),
+                cache: HashMap::new(),
+            }
         }
     }
 
     fn populate_cache(&mut self) {
+        let paths: Vec<String> = fs::read_dir("/usr/share/applications/")
+            .unwrap()
+            // TODO: seriously?
+            .map(|p| p.unwrap().path().to_str().unwrap().to_string())
+            .collect();
         // Reset search results
-        for path in &self.paths {
+        for path in &paths {
             let info = Ini::load_from_file(path).unwrap();
             let section = match info.section(Some("Desktop Entry")) {
                 Some(sec) => sec,
@@ -60,6 +69,7 @@ impl Delegate {
 
             // First search a default theme
             let mut icon_path = String::new();
+            // let icon_path = String::from("/home/docler/src/launcherrr/src/assets/default.png");
             for entry in WalkDir::new("/usr/share/icons/hicolor/48x48")
                 .into_iter()
                 .filter_map(|e| e.ok())
@@ -68,31 +78,33 @@ impl Delegate {
                     icon_path = String::from(entry.path().to_str().unwrap());
                 }
             }
+            // If we couldn't find the icon, search any theme.
+            // This should be really slow, but it's almost immediate with walkdir.
+            // Still, we can do this better
+            if icon_path.is_empty() {
+                let mut stop = false;
+                for icon_theme in std::fs::read_dir("/usr/share/icons/").unwrap() {
+                    let mut icon_theme_path = icon_theme.unwrap().path();
+                    icon_theme_path.push("48x48");
 
-            // // If we couldn't find the icon, search any theme.
-            // // This should be really slow, but it's almost immediate with walkdir.
-            // // Still, we can do this better
-            // if icon_path.is_empty() {
-            //     let mut stop = false;
-            //     for icon_theme in std::fs::read_dir("/usr/share/icons/").unwrap() {
-            //         let mut icon_theme_path = icon_theme.unwrap().path();
-            //         icon_theme_path.push("48x48");
-
-            //         for entry in WalkDir::new(icon_theme_path)
-            //             .into_iter()
-            //             .filter_map(|e| e.ok())
-            //         {
-            //             if entry.path().file_stem().unwrap() == icon {
-            //                 icon_path = String::from(entry.path().to_str().unwrap());
-            //                 stop = true;
-            //                 break;
-            //             }
-            //         }
-            //         if stop {
-            //             break;
-            //         }
-            //     }
-            // };
+                    for entry in WalkDir::new(icon_theme_path)
+                        .into_iter()
+                        .filter_map(|e| e.ok())
+                    {
+                        if entry.path().file_stem().unwrap() == icon {
+                            icon_path = String::from(entry.path().to_str().unwrap());
+                            stop = true;
+                            break;
+                        }
+                    }
+                    if stop {
+                        break;
+                    }
+                }
+            };
+            if icon_path.is_empty() {
+                icon_path = "/home/docler/src/launcherrr/src/assets/default.png".to_string()
+            }
 
             self.cache.insert(
                 path.to_string(),
@@ -105,23 +117,24 @@ impl Delegate {
                 },
             );
         }
+        if let Ok(file) = fs::File::create("/tmp/launcherrr") {
+            serde_json::to_writer(file, self).unwrap();
+        }
     }
 
     fn search(&mut self, data: &AppState) -> Vec<SearchResult> {
         // Reset search results
         let mut search_results = vec![];
-        for path in &self.paths {
+        for (path, search_result) in &self.cache {
             match self.matcher.fuzzy_match(path, &data.input_text) {
                 Some(_) => (),
                 None => continue,
             };
-            if let Some(search_result) = self.cache.get(path) {
-                let res = SearchResult {
-                    selected: search_results.len() == data.selected_line,
-                    ..search_result.clone()
-                };
-                search_results.push(res);
+            let res = SearchResult {
+                selected: search_results.len() == data.selected_line,
+                ..search_result.clone()
             };
+            search_results.push(res);
         }
         search_results
     }
@@ -187,7 +200,9 @@ impl AppDelegate<AppState> for Delegate {
 
     fn window_added(&mut self, _i: WindowId, _d: &mut AppState, _e: &Env, _c: &mut DelegateCtx) {
         // thread::spawn(move || self.populate_cache());
-        self.populate_cache();
+        if self.cache.is_empty() {
+            self.populate_cache();
+        }
     }
     fn window_removed(&mut self, _i: WindowId, _d: &mut AppState, _e: &Env, _c: &mut DelegateCtx) {
         println!("REMOVED");
