@@ -13,18 +13,20 @@ use state::{AppState, SearchResult};
 mod delegate;
 use delegate::Delegate;
 
+const LABEL_MAIN_COLOR: Color = Color::rgb8(0xc2, 0xc2, 0xc2);
+const LABEL_SECONDARY_COLOR: Color = Color::rgb8(0x72, 0x72, 0x72);
+const LIST_ELEMENT_COLOR: Color = Color::rgba8(0xff, 0xff, 0xff, 0x22);
+const LIST_ELEMENT_COLOR_SELECTED: Color = Color::rgba8(0xff, 0xff, 0xff, 0x00);
+
 fn list_element() -> impl Widget<SearchResult> {
     EnvScope::new(
         |env: &mut Env, data: &SearchResult| {
             if data.selected {
-                env.set(
-                    theme::CONTAINER_BACKGROUND_COLOR,
-                    Color::rgba8(0xff, 0xff, 0xff, 0x22),
-                );
+                env.set(theme::CONTAINER_BACKGROUND_COLOR, LIST_ELEMENT_COLOR);
             } else {
                 env.set(
                     theme::CONTAINER_BACKGROUND_COLOR,
-                    Color::rgba8(0xff, 0xff, 0xff, 0x00),
+                    LIST_ELEMENT_COLOR_SELECTED,
                 );
             }
         },
@@ -40,7 +42,7 @@ fn list_element() -> impl Widget<SearchResult> {
                         Flex::column()
                             .with_child(
                                 Label::new(|item: &SearchResult, _env: &_| item.name.clone())
-                                    .color(Color::rgb8(0xc2, 0xc2, 0xc2))
+                                    .color(LABEL_MAIN_COLOR)
                                     .text_align(UnitPoint::LEFT),
                                 1.0,
                             )
@@ -48,7 +50,7 @@ fn list_element() -> impl Widget<SearchResult> {
                                 Label::new(|item: &SearchResult, _env: &_| {
                                     item.description.clone()
                                 })
-                                .color(Color::rgb8(0x72, 0x72, 0x72))
+                                .color(LABEL_SECONDARY_COLOR)
                                 .text_align(UnitPoint::LEFT),
                                 1.0,
                             ),
