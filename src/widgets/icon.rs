@@ -1,50 +1,64 @@
 use druid::piet::InterpolationMode;
 use druid::{
-    BoxConstraints, Data, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx,
-    Point, Rect, RenderContext, Size, UpdateCtx, Widget,
+    BoxConstraints, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, Point,
+    Rect, RenderContext, Size, UpdateCtx, Widget,
 };
 use image::GenericImageView;
 
-pub enum ImagePath<T> {
-    Specific(String),
-    Dynamic(Box<dyn Fn(&T, &Env) -> String>),
+pub struct Icon {
+    data: Option<Vec<u8>>,
+    width: usize,
+    height: usize,
 }
 
-pub struct Icon<T> {
-    image_path: ImagePath<T>,
-    image_path_resolved: Option<String>,
-}
-
-impl<T: Data> Icon<T> {
-    pub fn new(image_path: impl Into<ImagePath<T>>) -> Self {
-        let image_path = image_path.into();
+impl Icon {
+    pub fn new() -> Self {
         Self {
-            image_path,
-            image_path_resolved: None,
+            data: None,
+            height: 0,
+            width: 0,
         }
     }
 
-    fn resolve_image_path(&mut self, data: &T, env: &Env) {
-        self.image_path_resolved = match &self.image_path {
-            ImagePath::Specific(path) => Some(path.clone()),
-            ImagePath::Dynamic(closure) => Some(closure(data, env).clone()),
+    fn resolve_icon(&mut self, data: &String) {
+        if let Ok(im) = image::open(data) {
+            if let Some(buffer) = im.as_rgba8() {
+                let (width, height) = im.dimensions();
+                self.data = Some(buffer.to_vec());
+                self.width = width as usize;
+                self.height = height as usize;
+                return;
+            };
         };
+        // If we didn't return, set a default image
+        let im = image::load_from_memory(include_bytes!("../assets/default.png")).unwrap();
+        let (width, height) = im.dimensions();
+        self.data = Some(im.as_rgba8().unwrap().to_vec());
+        self.width = width as usize;
+        self.height = height as usize;
     }
 }
 
-impl<T: Data + PartialEq> Widget<T> for Icon<T> {
-    fn event(&mut self, _ctx: &mut EventCtx, _event: &Event, _data: &mut T, _env: &Env) {}
-
-    fn lifecycle(&mut self, _ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &T, env: &Env) {
+impl Widget<String> for Icon {
+    fn event(&mut self, _ctx: &mut EventCtx, event: &Event, data: &mut String, _env: &Env) {
         match event {
-            LifeCycle::WidgetAdded => self.resolve_image_path(data, env),
+            Event::WindowConnected => self.resolve_icon(data),
             _ => (),
         }
     }
 
-    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &T, data: &T, env: &Env) {
-        if old_data != data {
-            self.resolve_image_path(data, env);
+    fn lifecycle(
+        &mut self,
+        _ctx: &mut LifeCycleCtx,
+        _event: &LifeCycle,
+        _data: &String,
+        _env: &Env,
+    ) {
+    }
+
+    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &String, data: &String, _env: &Env) {
+        if !old_data.eq(data) {
+            self.resolve_icon(data);
             ctx.request_paint();
         }
     }
@@ -53,62 +67,29 @@ impl<T: Data + PartialEq> Widget<T> for Icon<T> {
         &mut self,
         _layout_ctx: &mut LayoutCtx,
         bc: &BoxConstraints,
-        _data: &T,
+        _data: &String,
         _env: &Env,
     ) -> Size {
         bc.max()
     }
 
-    fn paint(&mut self, paint_ctx: &mut PaintCtx, _data: &T, _env: &Env) {
-        let image_path = match self.image_path_resolved {
-            Some(ref i) => i,
-            None => return,
-        };
+    fn paint(&mut self, paint_ctx: &mut PaintCtx, _data: &String, _env: &Env) {
+        if let Some(data) = &self.data {
+            let image = match paint_ctx.make_image(
+                self.width,
+                self.height,
+                &data,
+                druid::piet::ImageFormat::RgbaSeparate,
+            ) {
+                Ok(image) => image,
+                Err(_) => return,
+            };
 
-        let im = match image::open(&image_path) {
-            Ok(im) => im,
-            Err(_) => return,
-        };
-
-        let buffer = match im.as_rgba8() {
-            Some(b) => b,
-            None => return,
-        };
-
-        let (width, height) = im.dimensions();
-
-        let image = match paint_ctx.make_image(
-            width as usize,
-            height as usize,
-            &buffer,
-            druid::piet::ImageFormat::RgbaSeparate,
-        ) {
-            Ok(image) => image,
-            Err(_) => return,
-        };
-
-        paint_ctx.draw_image(
-            &image,
-            Rect::from_origin_size(Point::ZERO, (width as f64, height as f64)),
-            InterpolationMode::Bilinear,
-        );
-    }
-}
-
-impl<T> From<String> for ImagePath<T> {
-    fn from(src: String) -> ImagePath<T> {
-        ImagePath::Specific(src)
-    }
-}
-
-impl<T> From<&str> for ImagePath<T> {
-    fn from(src: &str) -> ImagePath<T> {
-        ImagePath::Specific(src.to_string())
-    }
-}
-
-impl<T, F: Fn(&T, &Env) -> String + 'static> From<F> for ImagePath<T> {
-    fn from(src: F) -> ImagePath<T> {
-        ImagePath::Dynamic(Box::new(src))
+            paint_ctx.draw_image(
+                &image,
+                Rect::from_origin_size(Point::ZERO, (self.width as f64, self.height as f64)),
+                InterpolationMode::Bilinear,
+            );
+        }
     }
 }

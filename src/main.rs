@@ -35,10 +35,7 @@ fn list_element() -> impl Widget<SearchResult> {
             Padding::new(
                 (25., 15., 15., 15.),
                 Flex::row()
-                    .with_child(
-                        Icon::new(|item: &SearchResult, _env: &_| item.icon_path.clone()),
-                        1.,
-                    )
+                    .with_child(Icon::new().lens(SearchResult::icon_path), 1.)
                     .with_child(
                         Flex::column()
                             .with_child(

@@ -2,9 +2,10 @@ use serde::{Serialize, Deserialize};
 use druid::{Data, Lens};
 use std::sync::Arc;
 
-#[derive(Clone, Data, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Data, PartialEq, Serialize, Deserialize, Lens)]
 pub struct SearchResult {
     pub icon_path: String,
+    pub path: String,
     pub name: String,
     pub description: String,
     pub command: String,

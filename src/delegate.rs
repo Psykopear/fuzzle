@@ -1,16 +1,15 @@
-use druid::{
-    AppDelegate, Command, DelegateCtx, Env, Event, HotKey, KeyCode, SysMods, Target, WindowId,
-};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use std::fs;
-
-use walkdir::WalkDir;
+use std::sync::Arc;
 
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 use ini::Ini;
-use std::sync::Arc;
+use serde::{Deserialize, Serialize};
+use walkdir::WalkDir;
+
+use druid::{
+    AppDelegate, Command, DelegateCtx, Env, Event, HotKey, KeyCode, SysMods, Target, WindowId,
+};
 
 use crate::{AppState, SearchResult};
 
@@ -18,7 +17,7 @@ use crate::{AppState, SearchResult};
 pub struct Delegate {
     #[serde(skip)]
     matcher: SkimMatcherV2,
-    cache: HashMap<String, SearchResult>,
+    cache: Vec<SearchResult>,
 }
 
 impl Delegate {
@@ -28,9 +27,9 @@ impl Delegate {
             cache: match fs::File::open("/tmp/launcherrr_cache.bincode") {
                 Ok(file) => match bincode::deserialize_from::<fs::File, Delegate>(file) {
                     Ok(delegate) => delegate.cache,
-                    Err(_) => HashMap::new(),
+                    Err(_) => vec![],
                 },
-                Err(_) => HashMap::new(),
+                Err(_) => vec![],
             },
         }
     }
@@ -103,22 +102,15 @@ impl Delegate {
                     }
                 }
             };
-            // Use a default icon.
-            // TODO: This should not be an absolute path
-            if icon_path.is_empty() {
-                icon_path = "/home/docler/src/launcherrr/src/assets/default.png".to_string()
-            }
 
-            self.cache.insert(
-                path.to_string(),
-                SearchResult {
-                    name,
-                    description,
-                    icon_path,
-                    command,
-                    selected: false,
-                },
-            );
+            self.cache.push(SearchResult {
+                path: path.to_string(),
+                name,
+                description,
+                icon_path,
+                command,
+                selected: false,
+            });
         }
         if let Ok(file) = fs::File::create("/tmp/launcherrr_cache.bincode") {
             bincode::serialize_into(file, self).unwrap();
@@ -127,19 +119,22 @@ impl Delegate {
 
     fn search(&mut self, data: &AppState) -> Vec<SearchResult> {
         // Reset search results
-        let mut search_results = vec![];
-        for (path, search_result) in &self.cache {
-            match self.matcher.fuzzy_match(path, &data.input_text) {
-                Some(_) => (),
-                None => continue,
-            };
-            let res = SearchResult {
-                selected: search_results.len() == data.selected_line,
-                ..search_result.clone()
-            };
-            search_results.push(res);
-        }
-        search_results
+        self.cache
+            .iter()
+            .enumerate()
+            .filter_map(|(index, search_result)| {
+                match self
+                    .matcher
+                    .fuzzy_match(&search_result.path, &data.input_text)
+                {
+                    Some(_) => Some(SearchResult {
+                        selected: index == data.selected_line,
+                        ..search_result.clone()
+                    }),
+                    None => None,
+                }
+            })
+            .collect()
     }
 }
 
@@ -212,7 +207,5 @@ impl AppDelegate<AppState> for Delegate {
             self.populate_cache();
         }
     }
-    fn window_removed(&mut self, _i: WindowId, _d: &mut AppState, _e: &Env, _c: &mut DelegateCtx) {
-        println!("REMOVED");
-    }
+    fn window_removed(&mut self, _i: WindowId, _d: &mut AppState, _e: &Env, _c: &mut DelegateCtx) {}
 }
