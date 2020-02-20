@@ -68,9 +68,11 @@ impl Delegate {
                 None => continue,
             };
 
+            // TODO: Ideally the user should be able to configure
+            //       a default theme a some fallback themes
+            //
             // First search a default theme
             let mut icon_path = String::new();
-            // let icon_path = String::from("/home/docler/src/launcherrr/src/assets/default.png");
             for entry in WalkDir::new("/usr/share/icons/hicolor/48x48")
                 .into_iter()
                 .filter_map(|e| e.ok())
@@ -79,9 +81,9 @@ impl Delegate {
                     icon_path = String::from(entry.path().to_str().unwrap());
                 }
             }
-            // If we couldn't find the icon, search any theme.
-            // This should be really slow, but it's almost immediate with walkdir.
-            // Still, we can do this better
+            // If we can't find the icon, search any theme.
+            // Even though WalkDir is quite fast, this can become slow if there are
+            // a lot of themes
             if icon_path.is_empty() {
                 let mut stop = false;
                 for icon_theme in std::fs::read_dir("/usr/share/icons/").unwrap() {
@@ -103,6 +105,8 @@ impl Delegate {
                     }
                 }
             };
+            // Use a default icon.
+            // TODO: This should not be an absolute path
             if icon_path.is_empty() {
                 icon_path = "/home/docler/src/launcherrr/src/assets/default.png".to_string()
             }
