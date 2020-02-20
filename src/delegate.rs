@@ -125,7 +125,7 @@ impl Delegate {
             .filter_map(|(index, search_result)| {
                 match self
                     .matcher
-                    .fuzzy_match(&search_result.path, &data.input_text)
+                    .fuzzy_match(&search_result.name, &data.input_text)
                 {
                     Some(_) => Some(SearchResult {
                         selected: index == data.selected_line,
