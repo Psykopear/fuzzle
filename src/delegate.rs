@@ -24,16 +24,16 @@ pub struct Delegate {
 impl Delegate {
     pub fn new() -> Self {
         if let Ok(file) = fs::File::open("/tmp/launcherrr") {
-            let delegate: Delegate = serde_json::from_reader(file).unwrap();
-            Self {
-                matcher: SkimMatcherV2::default(),
-                cache: delegate.cache,
+            if let Ok(delegate: Delegate) = serde_json::from_reader(file) {
+                return Self {
+                    matcher: SkimMatcherV2::default(),
+                    cache: delegate.cache,
+                }
             }
-        } else {
-            Self {
-                matcher: SkimMatcherV2::default(),
-                cache: HashMap::new(),
-            }
+        }
+        Self {
+            matcher: SkimMatcherV2::default(),
+            cache: HashMap::new(),
         }
     }
 
