@@ -13,6 +13,7 @@ use state::{AppState, SearchResult};
 mod delegate;
 use delegate::Delegate;
 
+const BG_COLOR: Color = Color::rgb8(0x39, 0x3d, 0x40);
 const LABEL_MAIN_COLOR: Color = Color::rgb8(0xc2, 0xc2, 0xc2);
 const LABEL_SECONDARY_COLOR: Color = Color::rgb8(0x72, 0x72, 0x72);
 const LIST_ELEMENT_COLOR: Color = Color::rgba8(0xff, 0xff, 0xff, 0x22);
@@ -85,10 +86,7 @@ fn main() -> Result<(), PlatformError> {
             env.set(theme::TEXT_SIZE_NORMAL, 20.);
             env.set(theme::TEXT_SIZE_LARGE, 30.);
             env.set(theme::TEXTBOX_BORDER_RADIUS, 2.);
-            env.set(
-                theme::WINDOW_BACKGROUND_COLOR,
-                Color::rgb8(0x39, 0x3d, 0x40),
-            );
+            env.set(theme::WINDOW_BACKGROUND_COLOR, BG_COLOR);
             env.set(theme::LABEL_COLOR, Color::rgb8(0xf2, 0xf2, 0xf2));
             env.set(theme::LABEL_SECONDARY_COLOR, Color::rgb8(0xa2, 0xa2, 0xa2));
             env.set(theme::BACKGROUND_LIGHT, Color::rgb8(0x39, 0x3d, 0x40));

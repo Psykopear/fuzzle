@@ -23,18 +23,15 @@ pub struct Delegate {
 
 impl Delegate {
     pub fn new() -> Self {
-        if let Ok(file) = fs::File::open("/tmp/launcherrr_cache.bincode") {
-            if let Ok(delegate) = bincode::deserialize_from(file) {
-                let delegate: Delegate = delegate;
-                return Self {
-                    matcher: SkimMatcherV2::default(),
-                    cache: delegate.cache,
-                }
-            }
-        }
         Self {
             matcher: SkimMatcherV2::default(),
-            cache: HashMap::new(),
+            cache: match fs::File::open("/tmp/launcherrr_cache.bincode") {
+                Ok(file) => match bincode::deserialize_from::<fs::File, Delegate>(file) {
+                    Ok(delegate) => delegate.cache,
+                    Err(_) => HashMap::new(),
+                },
+                Err(_) => HashMap::new(),
+            },
         }
     }
 
@@ -44,6 +41,7 @@ impl Delegate {
             // TODO: seriously?
             .map(|p| p.unwrap().path().to_str().unwrap().to_string())
             .collect();
+
         // Reset search results
         for path in &paths {
             let info = Ini::load_from_file(path).unwrap();
@@ -154,6 +152,10 @@ impl AppDelegate<AppState> for Delegate {
         data: &mut AppState,
         _env: &Env,
     ) -> Option<Event> {
+        let mut update_data = |data: &mut AppState| {
+            data.search_results = Arc::new(self.search(&data));
+        };
+
         match event {
             Event::KeyDown(key_event) => {
                 if key_event.key_code == KeyCode::Escape {
@@ -175,6 +177,7 @@ impl AppDelegate<AppState> for Delegate {
                     if data.selected_line < 2.min(data.search_results.len() - 1) {
                         data.selected_line += 1;
                     }
+                    update_data(data);
                     return None;
                 };
                 if key_event.key_code == KeyCode::ArrowUp
@@ -183,12 +186,13 @@ impl AppDelegate<AppState> for Delegate {
                     if data.selected_line > 0 {
                         data.selected_line -= 1;
                     }
+                    update_data(data);
                     return None;
                 };
             }
             _ => (),
         };
-        data.search_results = Arc::new(self.search(&data));
+        update_data(data);
         Some(event)
     }
 
@@ -204,7 +208,6 @@ impl AppDelegate<AppState> for Delegate {
     }
 
     fn window_added(&mut self, _i: WindowId, _d: &mut AppState, _e: &Env, _c: &mut DelegateCtx) {
-        // thread::spawn(move || self.populate_cache());
         if self.cache.is_empty() {
             self.populate_cache();
         }
