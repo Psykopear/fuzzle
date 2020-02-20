@@ -23,8 +23,9 @@ pub struct Delegate {
 
 impl Delegate {
     pub fn new() -> Self {
-        if let Ok(file) = fs::File::open("/tmp/launcherrr") {
-            if let Ok(delegate: Delegate) = serde_json::from_reader(file) {
+        if let Ok(file) = fs::File::open("/tmp/launcherrr_cache.bincode") {
+            if let Ok(delegate) = bincode::deserialize_from(file) {
+                let delegate: Delegate = delegate;
                 return Self {
                     matcher: SkimMatcherV2::default(),
                     cache: delegate.cache,
@@ -117,8 +118,8 @@ impl Delegate {
                 },
             );
         }
-        if let Ok(file) = fs::File::create("/tmp/launcherrr") {
-            serde_json::to_writer(file, self).unwrap();
+        if let Ok(file) = fs::File::create("/tmp/launcherrr_cache.bincode") {
+            bincode::serialize_into(file, self).unwrap();
         }
     }
 
