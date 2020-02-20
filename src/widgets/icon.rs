@@ -12,22 +12,41 @@ pub enum ImagePath<T> {
 
 pub struct Icon<T> {
     image_path: ImagePath<T>,
+    image_path_resolved: Option<String>,
 }
 
 impl<T: Data> Icon<T> {
     pub fn new(image_path: impl Into<ImagePath<T>>) -> Self {
         let image_path = image_path.into();
-        Self { image_path }
+        Self {
+            image_path,
+            image_path_resolved: None,
+        }
+    }
+
+    fn resolve_image_path(&mut self, data: &T, env: &Env) {
+        self.image_path_resolved = match &self.image_path {
+            ImagePath::Specific(path) => Some(path.clone()),
+            ImagePath::Dynamic(closure) => Some(closure(data, env).clone()),
+        };
     }
 }
 
-impl<T: Data> Widget<T> for Icon<T> {
+impl<T: Data + PartialEq> Widget<T> for Icon<T> {
     fn event(&mut self, _ctx: &mut EventCtx, _event: &Event, _data: &mut T, _env: &Env) {}
 
-    fn lifecycle(&mut self, _ctx: &mut LifeCycleCtx, _event: &LifeCycle, _data: &T, _env: &Env) {}
+    fn lifecycle(&mut self, _ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &T, env: &Env) {
+        match event {
+            LifeCycle::WidgetAdded => self.resolve_image_path(data, env),
+            _ => (),
+        }
+    }
 
-    fn update(&mut self, ctx: &mut UpdateCtx, _old_data: &T, _data: &T, _env: &Env) {
-        ctx.request_paint();
+    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &T, data: &T, env: &Env) {
+        if old_data != data {
+            self.resolve_image_path(data, env);
+            ctx.request_paint();
+        }
     }
 
     fn layout(
@@ -40,34 +59,39 @@ impl<T: Data> Widget<T> for Icon<T> {
         bc.max()
     }
 
-    fn paint(&mut self, paint_ctx: &mut PaintCtx, data: &T, env: &Env) {
-        // TODO: This should be done only once, not every paint
-        let image_path = match &self.image_path {
-            ImagePath::Specific(path) => path.clone(),
-            ImagePath::Dynamic(closure) => {
-                let res: String = closure(data, env);
-                res.clone()
-            }
+    fn paint(&mut self, paint_ctx: &mut PaintCtx, _data: &T, _env: &Env) {
+        let image_path = match self.image_path_resolved {
+            Some(ref i) => i,
+            None => return,
         };
 
-        if let Ok(im) = image::open(&image_path) {
-            let (width, height) = im.dimensions();
-            if let Some(buffer) = im.as_rgba8() {
-                let image = paint_ctx
-                    .make_image(
-                        width as usize,
-                        height as usize,
-                        &buffer,
-                        druid::piet::ImageFormat::RgbaSeparate,
-                    )
-                    .expect("Can't make image");
-                paint_ctx.draw_image(
-                    &image,
-                    Rect::from_origin_size(Point::ZERO, (width as f64, height as f64)),
-                    InterpolationMode::Bilinear,
-                );
-            };
+        let im = match image::open(&image_path) {
+            Ok(im) => im,
+            Err(_) => return,
         };
+
+        let buffer = match im.as_rgba8() {
+            Some(b) => b,
+            None => return,
+        };
+
+        let (width, height) = im.dimensions();
+
+        let image = match paint_ctx.make_image(
+            width as usize,
+            height as usize,
+            &buffer,
+            druid::piet::ImageFormat::RgbaSeparate,
+        ) {
+            Ok(image) => image,
+            Err(_) => return,
+        };
+
+        paint_ctx.draw_image(
+            &image,
+            Rect::from_origin_size(Point::ZERO, (width as f64, height as f64)),
+            InterpolationMode::Bilinear,
+        );
     }
 }
 
