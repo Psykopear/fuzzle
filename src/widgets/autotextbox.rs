@@ -46,7 +46,7 @@ impl AutoTextBox {
             hscroll_offset: 0.,
             selection: Selection::caret(0),
             cursor_timer: TimerToken::INVALID,
-            cursor_on: false,
+            cursor_on: true,
             placeholder: String::new(),
         }
     }
@@ -246,6 +246,12 @@ impl Widget<String> for AutoTextBox {
             //TODO: move this to a 'handle_key' function, remove the #allow above
             Event::KeyDown(key_event) => {
                 match key_event {
+                    // TODO: I'm ignoring commands here because if I just
+                    // avoid propagating events in the delegate the app does not repaint
+                    ke if ke.key_code == KeyCode::ArrowDown
+                        || (HotKey::new(SysMods::Cmd, "j")).matches(ke) => {}
+                    ke if ke.key_code == KeyCode::ArrowUp
+                        || (HotKey::new(SysMods::Cmd, "k")).matches(ke) => {}
                     // Select all (Ctrl+A || Cmd+A)
                     k_e if (HotKey::new(SysMods::Cmd, "a")).matches(k_e) => {
                         self.selection.all(data);

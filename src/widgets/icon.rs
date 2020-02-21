@@ -20,16 +20,18 @@ impl Icon {
         }
     }
 
-    fn resolve_icon(&mut self, data: &String) {
-        if let Ok(im) = image::open(data) {
-            if let Some(buffer) = im.as_rgba8() {
-                let (width, height) = im.dimensions();
-                self.data = Some(buffer.to_vec());
-                self.width = width as usize;
-                self.height = height as usize;
-                return;
+    fn resolve_icon(&mut self, data: &Option<String>) {
+        if let Some(data) = data {
+            if let Ok(im) = image::open(data) {
+                if let Some(buffer) = im.as_rgba8() {
+                    let (width, height) = im.dimensions();
+                    self.data = Some(buffer.to_vec());
+                    self.width = width as usize;
+                    self.height = height as usize;
+                    return;
+                };
             };
-        };
+        }
         // If we didn't return, set a default image
         let im = image::load_from_memory(include_bytes!("../assets/default.png")).unwrap();
         let (width, height) = im.dimensions();
@@ -39,8 +41,8 @@ impl Icon {
     }
 }
 
-impl Widget<String> for Icon {
-    fn event(&mut self, _ctx: &mut EventCtx, event: &Event, data: &mut String, _env: &Env) {
+impl Widget<Option<String>> for Icon {
+    fn event(&mut self, _ctx: &mut EventCtx, event: &Event, data: &mut Option<String>, _env: &Env) {
         match event {
             Event::WindowConnected => self.resolve_icon(data),
             _ => (),
@@ -51,12 +53,12 @@ impl Widget<String> for Icon {
         &mut self,
         _ctx: &mut LifeCycleCtx,
         _event: &LifeCycle,
-        _data: &String,
+        _data: &Option<String>,
         _env: &Env,
     ) {
     }
 
-    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &String, data: &String, _env: &Env) {
+    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &Option<String>, data: &Option<String>, _env: &Env) {
         if !old_data.eq(data) {
             self.resolve_icon(data);
             ctx.request_paint();
@@ -67,13 +69,13 @@ impl Widget<String> for Icon {
         &mut self,
         _layout_ctx: &mut LayoutCtx,
         bc: &BoxConstraints,
-        _data: &String,
+        _data: &Option<String>,
         _env: &Env,
     ) -> Size {
         bc.max()
     }
 
-    fn paint(&mut self, paint_ctx: &mut PaintCtx, _data: &String, _env: &Env) {
+    fn paint(&mut self, paint_ctx: &mut PaintCtx, _data: &Option<String>, _env: &Env) {
         if let Some(data) = &self.data {
             let image = match paint_ctx.make_image(
                 self.width,
