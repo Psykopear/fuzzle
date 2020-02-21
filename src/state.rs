@@ -9,6 +9,7 @@ pub struct SearchResult {
     pub name: String,
     pub description: String,
     pub command: String,
+
     #[serde(skip)]
     pub selected: bool,
     #[serde(skip)]

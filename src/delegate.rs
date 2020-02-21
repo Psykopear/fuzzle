@@ -119,8 +119,8 @@ impl Delegate {
         }
     }
 
-    fn search(&mut self, data: &AppState) -> Vec<SearchResult> {
-        // Reset search results
+    fn search(&mut self, data: &AppState) -> (usize, Vec<SearchResult>) {
+        // Search in all the cache so we have score for each entry
         let mut res: Vec<SearchResult> = self
             .cache
             .iter()
@@ -141,11 +141,21 @@ impl Delegate {
                 }
             })
             .collect();
+        // Now order by score, descending
         res.sort_unstable_by_key(|a| -a.score);
-        if res.len() > data.selected_line {
+        // Select the line
+        let len = res.len();
+        if len > data.selected_line {
             res[data.selected_line].selected = true;
         }
-        res
+
+        match data.selected_line {
+            0 => (len, res[0..4.min(len)].to_vec()),
+            _ => (
+                len,
+                res[(data.selected_line - 1)..(data.selected_line + 2).min(len)].to_vec(),
+            ),
+        }
     }
 }
 
@@ -158,6 +168,7 @@ impl AppDelegate<AppState> for Delegate {
         data: &mut AppState,
         _env: &Env,
     ) -> Option<Event> {
+        let (num_results, results) = self.search(&data);
         match event {
             Event::KeyDown(key_event) => match key_event {
                 ke if ke.key_code == KeyCode::Escape => std::process::exit(0),
@@ -172,7 +183,7 @@ impl AppDelegate<AppState> for Delegate {
                 ke if ke.key_code == KeyCode::ArrowDown
                     || (HotKey::new(SysMods::Cmd, "j")).matches(ke) =>
                 {
-                    if data.selected_line + 1 < data.search_results.len() {
+                    if data.selected_line + 1 < num_results {
                         data.selected_line += 1;
                     }
                 }
@@ -182,12 +193,12 @@ impl AppDelegate<AppState> for Delegate {
                     if data.selected_line > 0 {
                         data.selected_line -= 1;
                     }
-                },
+                }
                 _ => (),
             },
             _ => (),
         };
-        data.search_results = Arc::new(self.search(&data));
+        data.search_results = Arc::new(results);
         Some(event)
     }
 
