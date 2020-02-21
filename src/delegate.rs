@@ -172,10 +172,9 @@ impl AppDelegate<AppState> for Delegate {
                 ke if ke.key_code == KeyCode::ArrowDown
                     || (HotKey::new(SysMods::Cmd, "j")).matches(ke) =>
                 {
-                    if data.selected_line < data.search_results.len() {
+                    if data.selected_line + 1 < data.search_results.len() {
                         data.selected_line += 1;
                     }
-                    // return None;
                 }
                 ke if ke.key_code == KeyCode::ArrowUp
                     || (HotKey::new(SysMods::Cmd, "k")).matches(ke) =>
@@ -183,7 +182,6 @@ impl AppDelegate<AppState> for Delegate {
                     if data.selected_line > 0 {
                         data.selected_line -= 1;
                     }
-                    // return None;
                 },
                 _ => (),
             },
