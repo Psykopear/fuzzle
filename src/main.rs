@@ -16,19 +16,16 @@ use delegate::Delegate;
 const BG_COLOR: Color = Color::rgb8(0x39, 0x3d, 0x40);
 const LABEL_MAIN_COLOR: Color = Color::rgb8(0xc2, 0xc2, 0xc2);
 const LABEL_SECONDARY_COLOR: Color = Color::rgb8(0x72, 0x72, 0x72);
-const LIST_ELEMENT_COLOR: Color = Color::rgba8(0xff, 0xff, 0xff, 0x22);
-const LIST_ELEMENT_COLOR_SELECTED: Color = Color::rgba8(0xff, 0xff, 0xff, 0x00);
+const ELEMENT_COLOR: Color = Color::rgba8(0xff, 0xff, 0xff, 0x22);
+const ELEMENT_COLOR_SELECTED: Color = Color::rgba8(0xff, 0xff, 0xff, 0x00);
 
 fn list_element() -> impl Widget<SearchResult> {
     EnvScope::new(
         |env: &mut Env, data: &SearchResult| {
             if data.selected {
-                env.set(theme::CONTAINER_BACKGROUND_COLOR, LIST_ELEMENT_COLOR);
+                env.set(theme::CONTAINER_BACKGROUND_COLOR, ELEMENT_COLOR);
             } else {
-                env.set(
-                    theme::CONTAINER_BACKGROUND_COLOR,
-                    LIST_ELEMENT_COLOR_SELECTED,
-                );
+                env.set(theme::CONTAINER_BACKGROUND_COLOR, ELEMENT_COLOR_SELECTED);
             }
         },
         Container::new(

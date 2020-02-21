@@ -96,14 +96,14 @@ impl Delegate {
             None => None,
         };
         Some(SearchResult {
+            icon_path,
             path: String::from(path.to_str().unwrap()),
-            score: 0,
-            indices: vec![],
             name,
             description,
-            icon_path,
             command,
+            score: 0,
             selected: false,
+            indices: vec![],
         })
     }
 
@@ -149,13 +149,10 @@ impl Delegate {
             res[data.selected_line].selected = true;
         }
 
-        match data.selected_line {
-            0 => (len, res[0..4.min(len)].to_vec()),
-            _ => (
-                len,
-                res[(data.selected_line - 1)..(data.selected_line + 2).min(len)].to_vec(),
-            ),
-        }
+        (
+            len,
+            res[data.selected_line..(data.selected_line + 3).min(len)].to_vec(),
+        )
     }
 }
 
@@ -180,19 +177,16 @@ impl AppDelegate<AppState> for Delegate {
                         Err(_) => (),
                     };
                 }
-                ke if ke.key_code == KeyCode::ArrowDown
-                    || (HotKey::new(SysMods::Cmd, "j")).matches(ke) =>
+                ke if (HotKey::new(SysMods::Cmd, "j")).matches(ke)
+                    || ke.key_code == KeyCode::ArrowDown =>
                 {
-                    if data.selected_line + 1 < num_results {
-                        data.selected_line += 1;
-                    }
+                    data.selected_line = data.selected_line.min(num_results - 2) + 1
                 }
-                ke if ke.key_code == KeyCode::ArrowUp
-                    || (HotKey::new(SysMods::Cmd, "k")).matches(ke) =>
+
+                ke if (HotKey::new(SysMods::Cmd, "k")).matches(ke)
+                    || ke.key_code == KeyCode::ArrowUp =>
                 {
-                    if data.selected_line > 0 {
-                        data.selected_line -= 1;
-                    }
+                    data.selected_line = data.selected_line.max(1) - 1;
                 }
                 _ => (),
             },
