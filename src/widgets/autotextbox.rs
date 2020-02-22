@@ -14,6 +14,7 @@ use druid::piet::{
 use druid::theme;
 use druid::widget::Align;
 
+// Things I had to make public in druid to make this work, maybe I can avoid this
 use druid::{offset_for_delete_backwards, EditableText, Selection};
 
 const BORDER_WIDTH: f64 = 0.;
