@@ -13,7 +13,7 @@ use crate::SearchResult;
 
 const MAIN_COLOR: Color = Color::rgb8(0xc2, 0xc2, 0xc2);
 const SECONDARY_COLOR: Color = Color::rgb8(0x92, 0x92, 0x92);
-const PADDING: f64 = 25.;
+const PADDING: f64 = 20.;
 
 /// A list element that displays a searchresult
 pub struct ListElement {

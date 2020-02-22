@@ -189,6 +189,7 @@ impl AppDelegate<AppState> for Delegate {
                     data.selected_line = data.selected_line.max(1) - 1;
                 }
                 k_e if k_e.key_code.is_printable() => {
+                    // Reset selected line if new text comes
                     data.selected_line = 0;
                 }
                 _ => (),

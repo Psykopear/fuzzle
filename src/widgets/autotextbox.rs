@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 
 use druid::{
     Application, BoxConstraints, Cursor, Env, Event, EventCtx, HotKey, KeyCode, LayoutCtx,
-    LifeCycle, LifeCycleCtx, PaintCtx, RawMods, Selector, SysMods, TimerToken, UpdateCtx, Widget,
+    LifeCycle, LifeCycleCtx, PaintCtx, Selector, SysMods, TimerToken, UpdateCtx, Widget,
 };
 
 use druid::kurbo::{Affine, Line, Point, RoundedRect, Size, Vec2};
@@ -14,7 +14,7 @@ use druid::piet::{
 use druid::theme;
 use druid::widget::Align;
 
-use druid::{movement, offset_for_delete_backwards, EditableText, Movement, Selection};
+use druid::{offset_for_delete_backwards, EditableText, Selection};
 
 const BORDER_WIDTH: f64 = 0.;
 const PADDING_TOP: f64 = 30.;
@@ -95,13 +95,6 @@ impl AutoTextBox {
     // TODO: is this the right name?
     fn cursor(&self) -> usize {
         self.selection.end
-    }
-
-    /// Edit a selection using a `Movement`.
-    fn move_selection(&mut self, mvmnt: Movement, text: &mut String, modify: bool) {
-        // This movement function should ensure all movements are legit.
-        // If they aren't, that's a problem with the movement function.
-        self.selection = movement(mvmnt, self.selection, text, modify);
     }
 
     /// Delete to previous grapheme if in caret mode.
@@ -214,7 +207,6 @@ impl Widget<String> for AutoTextBox {
             Event::Timer(id) => {
                 if *id == self.cursor_timer {
                     self.cursor_on = !self.cursor_on;
-                    ctx.request_paint();
                     let deadline = Instant::now()
                         + if self.cursor_on {
                             Duration::from_millis(1000)
@@ -222,6 +214,7 @@ impl Widget<String> for AutoTextBox {
                             Duration::from_millis(500)
                         };
                     self.cursor_timer = ctx.request_timer(deadline);
+                    ctx.request_paint();
                 }
             }
             Event::Command(ref cmd)
@@ -256,60 +249,10 @@ impl Widget<String> for AutoTextBox {
                     k_e if (HotKey::new(SysMods::Cmd, "a")).matches(k_e) => {
                         self.selection.all(data);
                     }
-                    // Jump left (Ctrl+ArrowLeft || Cmd+ArrowLeft)
-                    k_e if (HotKey::new(SysMods::Cmd, KeyCode::ArrowLeft)).matches(k_e)
-                        || HotKey::new(None, KeyCode::Home).matches(k_e) =>
-                    {
-                        self.move_selection(Movement::LeftOfLine, data, false);
-                        self.reset_cursor_blink(ctx);
-                    }
-                    // Jump right (Ctrl+ArrowRight || Cmd+ArrowRight)
-                    k_e if (HotKey::new(SysMods::Cmd, KeyCode::ArrowRight)).matches(k_e)
-                        || HotKey::new(None, KeyCode::End).matches(k_e) =>
-                    {
-                        self.move_selection(Movement::RightOfLine, data, false);
-                        self.reset_cursor_blink(ctx);
-                    }
-                    // Select left (Shift+ArrowLeft)
-                    k_e if (HotKey::new(RawMods::Shift, KeyCode::ArrowLeft)).matches(k_e) => {
-                        self.move_selection(Movement::Left, data, true);
-                    }
-                    // Select right (Shift+ArrowRight)
-                    k_e if (HotKey::new(RawMods::Shift, KeyCode::ArrowRight)).matches(k_e) => {
-                        self.move_selection(Movement::Right, data, true);
-                    }
-                    // Move left (ArrowLeft)
-                    k_e if (HotKey::new(None, KeyCode::ArrowLeft)).matches(k_e) => {
-                        self.move_selection(Movement::Left, data, false);
-                        self.reset_cursor_blink(ctx);
-                    }
-                    // Move right (ArrowRight)
-                    k_e if (HotKey::new(None, KeyCode::ArrowRight)).matches(k_e) => {
-                        self.move_selection(Movement::Right, data, false);
-                        self.reset_cursor_blink(ctx);
-                    }
                     // Backspace
                     k_e if (HotKey::new(None, KeyCode::Backspace)).matches(k_e) => {
                         self.delete_backward(data);
                         self.reset_cursor_blink(ctx);
-                    }
-                    // Delete
-                    k_e if (HotKey::new(None, KeyCode::Delete)).matches(k_e) => {
-                        if self.selection.is_caret() {
-                            // Never touch the characters before the cursor.
-                            if data.next_grapheme_offset(self.cursor()).is_some() {
-                                self.move_selection(Movement::Right, data, false);
-                                self.delete_backward(data);
-                            }
-                        } else {
-                            self.delete_backward(data);
-                        }
-                        self.reset_cursor_blink(ctx);
-                    }
-                    // Tab and shift+tab
-                    k_e if HotKey::new(None, KeyCode::Tab).matches(k_e) => ctx.focus_next(),
-                    k_e if HotKey::new(RawMods::Shift, KeyCode::Tab).matches(k_e) => {
-                        ctx.focus_prev()
                     }
                     // Actual typing
                     k_e if k_e.key_code.is_printable() => {
