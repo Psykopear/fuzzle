@@ -188,6 +188,9 @@ impl AppDelegate<AppState> for Delegate {
                 {
                     data.selected_line = data.selected_line.max(1) - 1;
                 }
+                k_e if k_e.key_code.is_printable() => {
+                    data.selected_line = 0;
+                }
                 _ => (),
             },
             _ => (),
