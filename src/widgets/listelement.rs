@@ -13,6 +13,7 @@ use crate::SearchResult;
 
 const MAIN_COLOR: Color = Color::rgb8(0xc2, 0xc2, 0xc2);
 const SECONDARY_COLOR: Color = Color::rgb8(0x92, 0x92, 0x92);
+const PADDING: f64 = 25.;
 
 /// A list element that displays a searchresult
 pub struct ListElement {
@@ -183,7 +184,7 @@ impl Widget<SearchResult> for ListElement {
             paint_ctx.draw_image(
                 &image,
                 Rect::from_origin_size(
-                    Point::from((8., 14.)),
+                    Point::from((PADDING + 8., 14.)),
                     (self.icon_width as f64, self.icon_height as f64),
                 ),
                 InterpolationMode::Bilinear,
@@ -200,7 +201,7 @@ impl Widget<SearchResult> for ListElement {
         }
         if let Some(name) = &self.name {
             let name_origin = UnitPoint::LEFT.resolve(Rect::from_origin_size(
-                Point::from((64., 16.)),
+                Point::from((PADDING + 64., 16.)),
                 Size::new(
                     (paint_ctx.size().width - name.width()).max(0.0),
                     paint_ctx.size().height / 2.,
@@ -211,7 +212,7 @@ impl Widget<SearchResult> for ListElement {
         }
         if let Some(description) = &self.description {
             let description_origin = UnitPoint::LEFT.resolve(Rect::from_origin_size(
-                Point::from((64., paint_ctx.size().height / 2.)),
+                Point::from((PADDING + 64., paint_ctx.size().height / 2.)),
                 Size::new(
                     (paint_ctx.size().width - description.width()).max(0.0),
                     paint_ctx.size().height / 2.,
