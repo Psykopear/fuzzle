@@ -4,6 +4,8 @@ rust:
 cache: cargo
 script:
   - cargo build --release --all
+before_install:
+  - sudo apt-get -y install libgtk-3-dev
 deploy:
   provider: releases
   api_key:
