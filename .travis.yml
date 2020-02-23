@@ -1,11 +1,10 @@
-dist: xenial
+dist: bionic
 language: rust
 cache: cargo
 matrix:
   include:
     - os: linux
       rust: stable
-      env: GTK=3.14
 script:
   - cargo build --release --all
 addons:
