@@ -2,7 +2,6 @@
 
 Fuzzle aims to be a really fast application launcher with fuzzy search.
 
-![screenshot](screen.png)
 
 # Usage
 
