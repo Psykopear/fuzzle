@@ -9,12 +9,10 @@ Fuzzle aims to be a really fast application launcher with fuzzy search.
 
 Build with:
 ```
-cargo build --release
+cargo run --release
 ```
 
-And launch the compiled target.
-
-The first time fuzzle runs it takes some time (less than a second on my pc) to build a cache of existing applications.
+The first time Fuzzle runs it takes some time (less than a second on my pc) to build a cache of existing applications.
 
 After that, it's supposed to run as fast as you can type.
 
