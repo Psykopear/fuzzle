@@ -149,7 +149,7 @@ impl Delegate {
 
         (
             len,
-            res[data.selected_line..(data.selected_line + 3).min(len)].to_vec(),
+            res[data.selected_line.max(1) - 1..(data.selected_line + 3).min(len)].to_vec(),
         )
     }
 }
@@ -185,7 +185,9 @@ impl AppDelegate<AppState> for Delegate {
                 {
                     data.selected_line = data.selected_line.max(1) - 1;
                 }
-                k_e if k_e.key_code.is_printable() => {
+                k_e if k_e.key_code.is_printable()
+                    || (HotKey::new(None, KeyCode::Backspace)).matches(k_e) =>
+                {
                     // Reset selected line if new text comes
                     data.selected_line = 0;
                 }
