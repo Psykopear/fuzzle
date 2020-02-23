@@ -1,5 +1,5 @@
 //! A textbox widget that keeps focus.
-use druid::kurbo::{Line, Point, RoundedRect, Size, Vec2};
+use druid::kurbo::{Affine, Line, Point, RoundedRect, Size, Vec2};
 use druid::piet::{
     FontBuilder, PietText, PietTextLayout, RenderContext, Text, TextLayout, TextLayoutBuilder,
 };
@@ -18,6 +18,7 @@ const RESET_BLINK: Selector = Selector::new("reset-autotextbox-blink");
 pub struct AutoTextBox {
     textbox: Box<TextBox>,
     width: f64,
+    hscroll_offset: f64,
     cursor_timer: TimerToken,
     cursor_on: bool,
     cursor: usize,
@@ -29,6 +30,7 @@ impl AutoTextBox {
         Self {
             textbox: Box::new(TextBox::raw()),
             width: 0.0,
+            hscroll_offset: 0.,
             cursor_timer: TimerToken::INVALID,
             cursor: 0,
             cursor_on: true,
@@ -47,6 +49,43 @@ impl AutoTextBox {
             .new_text_layout(&font, &text.to_string())
             .build()
             .unwrap()
+    }
+
+    /// Given an offset (in bytes) of a valid grapheme cluster, return
+    /// the corresponding x coordinate of that grapheme on the screen.
+    fn x_for_offset(&self, layout: &PietTextLayout, offset: usize) -> f64 {
+        if let Some(position) = layout.hit_test_text_position(offset) {
+            position.point.x
+        } else {
+            0.0
+        }
+    }
+
+    /// Calculate a stateful scroll offset
+    fn update_hscroll(&mut self, layout: &PietTextLayout) {
+        let cursor_x = self.x_for_offset(layout, self.cursor);
+        let overall_text_width = layout.width();
+
+        let padding = PADDING_LEFT * 2.;
+        if overall_text_width < self.width {
+            // There's no offset if text is smaller than text box
+            //
+            // [***I*  ]
+            // ^
+            self.hscroll_offset = 0.;
+        } else if cursor_x > self.width + self.hscroll_offset - padding {
+            // If cursor goes past right side, bump the offset
+            //       ->
+            // **[****I]****
+            //   ^
+            self.hscroll_offset = cursor_x - self.width + padding;
+        } else if cursor_x < self.hscroll_offset {
+            // If cursor goes past left side, match the offset
+            //    <-
+            // **[I****]****
+            //   ^
+            self.hscroll_offset = cursor_x
+        }
     }
 
     fn reset_cursor_blink(&mut self, ctx: &mut EventCtx) {
@@ -87,6 +126,10 @@ impl Widget<String> for AutoTextBox {
                     }
                     _ => (),
                 };
+
+                let text_layout = self.get_layout(&mut ctx.text(), &data, env);
+                self.update_hscroll(&text_layout);
+                ctx.request_paint();
             }
             Event::Command(cmd) if cmd.selector == RESET_BLINK => self.reset_cursor_blink(ctx),
             Event::Timer(id) => {
@@ -151,7 +194,7 @@ impl Widget<String> for AutoTextBox {
                 let text_layout = self.get_layout(rc.text(), &data, env);
 
                 // Shift everything inside the clip by the hscroll_offset
-                // ctx.transform(Affine::translate((-self.textbox.hscroll_offset, 0.)));
+                rc.transform(Affine::translate((-self.hscroll_offset, 0.)));
 
                 // Layout, measure, and draw text
                 let text_height = font_size * 0.8;
@@ -162,12 +205,7 @@ impl Widget<String> for AutoTextBox {
 
                 // Paint the cursor
                 if self.cursor_on {
-                    let cursor_x =
-                        if let Some(position) = text_layout.hit_test_text_position(self.cursor) {
-                            position.point.x
-                        } else {
-                            0.0
-                        };
+                    let cursor_x = self.x_for_offset(&text_layout, self.cursor);
                     let xy = text_pos + Vec2::new(cursor_x, 2. - font_size);
                     let x2y2 = xy + Vec2::new(0., font_size + 2.);
                     let line = Line::new(xy, x2y2);
