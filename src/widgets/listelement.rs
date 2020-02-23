@@ -61,37 +61,7 @@ impl ListElement {
         self.icon_height = height as usize;
     }
 
-    fn event_resolve(&mut self, ctx: &mut EventCtx, data: &SearchResult) {
-        self.resolve_icon(data);
-        let font_name = "sans-serif";
-
-        let name_font = ctx
-            .text()
-            .new_font_by_name(font_name, self.name_font_size)
-            .build()
-            .unwrap();
-
-        let description_font = ctx
-            .text()
-            .new_font_by_name(font_name, self.description_font_size)
-            .build()
-            .unwrap();
-        self.name = Some(
-            ctx.text()
-                .new_text_layout(&name_font, &data.name)
-                .build()
-                .unwrap(),
-        );
-        self.description = Some(
-            ctx.text()
-                .new_text_layout(&description_font, &data.description)
-                .build()
-                .unwrap(),
-        );
-        self.selected = data.selected;
-    }
-
-    fn update_resolve(&mut self, ctx: &mut UpdateCtx, data: &SearchResult) {
+    fn resolve(&mut self, ctx: &mut PaintCtx, data: &SearchResult) {
         self.resolve_icon(data);
         let font_name = "sans-serif";
 
@@ -123,11 +93,7 @@ impl ListElement {
 }
 
 impl Widget<SearchResult> for ListElement {
-    fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut SearchResult, _env: &Env) {
-        match event {
-            Event::WindowConnected => self.event_resolve(ctx, data),
-            _ => (),
-        };
+    fn event(&mut self, _ctx: &mut EventCtx, _event: &Event, _data: &mut SearchResult, _env: &Env) {
     }
 
     fn lifecycle(
@@ -143,10 +109,9 @@ impl Widget<SearchResult> for ListElement {
         &mut self,
         ctx: &mut UpdateCtx,
         _old_data: &SearchResult,
-        data: &SearchResult,
+        _data: &SearchResult,
         _env: &Env,
     ) {
-        self.update_resolve(ctx, data);
         ctx.request_paint();
     }
 
@@ -169,7 +134,8 @@ impl Widget<SearchResult> for ListElement {
         }
     }
 
-    fn paint(&mut self, paint_ctx: &mut PaintCtx, _data: &SearchResult, _env: &Env) {
+    fn paint(&mut self, paint_ctx: &mut PaintCtx, search_result: &SearchResult, _env: &Env) {
+        self.resolve(paint_ctx, search_result);
         if let Some(data) = &self.icon_data {
             let image = match paint_ctx.make_image(
                 self.icon_width,

@@ -2,8 +2,8 @@
 use std::time::{Duration, Instant};
 
 use druid::{
-    Application, BoxConstraints, Cursor, Env, Event, EventCtx, HotKey, KeyCode, LayoutCtx,
-    LifeCycle, LifeCycleCtx, PaintCtx, Selector, SysMods, TimerToken, UpdateCtx, Widget,
+    BoxConstraints, Env, Event, EventCtx, HotKey, KeyCode, LayoutCtx, LifeCycle, LifeCycleCtx,
+    PaintCtx, Selector, SysMods, TimerToken, UpdateCtx, Widget,
 };
 
 use druid::kurbo::{Affine, Line, Point, RoundedRect, Size, Vec2};
@@ -85,10 +85,8 @@ impl AutoTextBox {
     /// Set the selection to be a caret at the given offset, if that's a valid
     /// codepoint boundary.
     fn caret_to(&mut self, text: &mut String, to: usize) {
-        match text.cursor(to) {
-            Some(_) => self.selection = Selection::caret(to),
-            // None => log::error!("You can't move the cursor there."),
-            None => (),
+        if text.cursor(to).is_some() {
+            self.selection = Selection::caret(to)
         }
     }
 
@@ -110,16 +108,6 @@ impl AutoTextBox {
             text.edit(self.selection.range(), "");
             self.caret_to(text, self.selection.min());
         }
-    }
-
-    /// For a given point, returns the corresponding offset (in bytes) of
-    /// the grapheme cluster closest to that point.
-    fn offset_for_point(&self, point: Point, layout: &PietTextLayout) -> usize {
-        // Translating from screenspace to Piet's text layout representation.
-        // We need to account for hscroll_offset state and AutoTextBox's padding.
-        let translated_point = Point::new(point.x + self.hscroll_offset - PADDING_LEFT, point.y);
-        let hit_test = layout.hit_test_point(translated_point);
-        hit_test.metrics.text_position
     }
 
     /// Given an offset (in bytes) of a valid grapheme cluster, return
@@ -168,43 +156,15 @@ impl AutoTextBox {
 }
 
 impl Widget<String> for AutoTextBox {
-    #[allow(clippy::cognitive_complexity)]
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut String, env: &Env) {
         // Guard against external changes in data?
         self.selection = self.selection.constrain_to(data);
 
-        let mut text_layout = self.get_layout(&mut ctx.text(), &data, env);
-
         // Ensure this widget always has focus
-        // if !ctx.has_focus() {
+        ctx.set_active(true);
         ctx.request_focus();
-        // }
 
         match event {
-            Event::MouseDown(mouse) => {
-                ctx.set_active(true);
-                let cursor_off = self.offset_for_point(mouse.pos, &text_layout);
-                if mouse.mods.shift {
-                    self.selection.end = cursor_off;
-                } else {
-                    self.caret_to(data, cursor_off);
-                }
-                ctx.request_paint();
-                self.reset_cursor_blink(ctx);
-            }
-            Event::MouseMoved(mouse) => {
-                ctx.set_cursor(&Cursor::IBeam);
-                if ctx.is_active() {
-                    self.selection.end = self.offset_for_point(mouse.pos, &text_layout);
-                    ctx.request_paint();
-                }
-            }
-            Event::MouseUp(_) => {
-                if ctx.is_active() {
-                    ctx.set_active(false);
-                    ctx.request_paint();
-                }
-            }
             Event::Timer(id) => {
                 if *id == self.cursor_timer {
                     self.cursor_on = !self.cursor_on;
@@ -218,26 +178,7 @@ impl Widget<String> for AutoTextBox {
                     ctx.request_paint();
                 }
             }
-            Event::Command(ref cmd)
-                if cmd.selector == druid::commands::COPY
-                    || cmd.selector == druid::commands::CUT =>
-            {
-                if let Some(text) = data.slice(self.selection.range()) {
-                    Application::clipboard().put_string(text);
-                }
-                if !self.selection.is_caret() && cmd.selector == druid::commands::CUT {
-                    self.delete_backward(data);
-                }
-                ctx.set_handled();
-            }
             Event::Command(cmd) if cmd.selector == RESET_BLINK => self.reset_cursor_blink(ctx),
-            Event::Paste(ref item) => {
-                if let Some(string) = item.get_string() {
-                    self.insert(data, &string);
-                    self.reset_cursor_blink(ctx);
-                }
-            }
-            //TODO: move this to a 'handle_key' function, remove the #allow above
             Event::KeyDown(key_event) => {
                 match key_event {
                     // TODO: I'm ignoring commands here because if I just
@@ -263,7 +204,7 @@ impl Widget<String> for AutoTextBox {
                     }
                     _ => {}
                 }
-                text_layout = self.get_layout(&mut ctx.text(), &data, env);
+                let text_layout = self.get_layout(&mut ctx.text(), &data, env);
                 self.update_hscroll(&text_layout);
                 ctx.request_paint();
             }

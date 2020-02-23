@@ -1,8 +1,8 @@
-use serde::{Serialize, Deserialize};
 use druid::{Data, Lens};
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
-#[derive(Clone, Data, PartialEq, Serialize, Deserialize, Lens)]
+#[derive(Clone, Debug, Data, PartialEq, Serialize, Deserialize, Lens)]
 pub struct SearchResult {
     pub icon_path: Option<String>,
     pub path: String,
@@ -16,7 +16,7 @@ pub struct SearchResult {
     pub score: i64,
     #[serde(skip)]
     #[druid(ignore)]
-    pub indices: Vec<usize>
+    pub indices: Vec<usize>,
 }
 
 #[derive(Clone, Data, Lens)]

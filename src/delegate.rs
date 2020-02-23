@@ -124,17 +124,15 @@ impl Delegate {
         let mut res: Vec<SearchResult> = self
             .cache
             .iter()
-            .filter_map(|search_result| {
-                let result = self
-                    .matcher
-                    .fuzzy_indices(&search_result.name, &data.input_text);
+            .filter_map(|sr| {
+                let result = self.matcher.fuzzy_indices(&sr.name, &data.input_text);
 
                 if let Some((score, indices)) = result {
                     Some(SearchResult {
                         score,
                         indices,
                         selected: false,
-                        ..search_result.clone()
+                        ..sr.clone()
                     })
                 } else {
                     None
@@ -166,16 +164,15 @@ impl AppDelegate<AppState> for Delegate {
         _env: &Env,
     ) -> Option<Event> {
         let (num_results, results) = self.search(&data);
-        match event {
-            Event::KeyDown(key_event) => match key_event {
+        if let Event::KeyDown(key_event) = event {
+            match key_event {
                 ke if ke.key_code == KeyCode::Escape => std::process::exit(0),
                 ke if ke.key_code == KeyCode::Return => {
                     let command = data.search_results[data.selected_line].command.clone();
                     let command = command.split_whitespace().next().unwrap();
-                    match std::process::Command::new(command).spawn() {
-                        Ok(_) => std::process::exit(0),
-                        Err(_) => (),
-                    };
+                    if std::process::Command::new(command).spawn().is_ok() {
+                        std::process::exit(0)
+                    }
                 }
                 ke if (HotKey::new(SysMods::Cmd, "j")).matches(ke)
                     || ke.key_code == KeyCode::ArrowDown =>
@@ -193,8 +190,7 @@ impl AppDelegate<AppState> for Delegate {
                     data.selected_line = 0;
                 }
                 _ => (),
-            },
-            _ => (),
+            }
         };
         data.search_results = Arc::new(results);
         Some(event)
