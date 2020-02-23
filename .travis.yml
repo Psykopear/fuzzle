@@ -5,7 +5,7 @@ matrix:
   include:
     - os: linux
       rust: stable
-      env: GTK=3.24 FEATURES=v3_16
+      env: GTK=3.14
 script:
   - cargo build --release --all
 addons:
