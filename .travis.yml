@@ -3,10 +3,10 @@ language: rust
 cache: cargo
 matrix:
   include:
-    - os: linux
-      rust: stable
+  - os: linux
+    rust: stable
 script:
-  - cargo build --release --all
+- cargo build --release --all
 addons:
   apt:
     packages:
@@ -15,10 +15,7 @@ addons:
 deploy:
   provider: releases
   api_key:
-    secure: XQ01dbOdLrFnrNJUF5r2phd5Li3V6QnDSziIvhiYsLTNSWNlMZX2Ewgbe8bKlRyPjqn4VUEQ5TNgkTcLRaZVdwDJ7LN/j4HaHxabSg1A82br/SSE5zomS1Ul12F2KM56F1JHxgfippweJQVaYRWrb+JxDwOITAsU0f65nu9vwVtmi/sN39WDN+IcAKyLeqmA4gMLPm/Dcq+kG4/sqxpAfq1cmrGTZpqfNivVISnwVjG+t0yZ9RMlX3yR5PNPR5U7PX2t04YRgxenuKgQ308h3Zw5gE2CRBCiBlpyRnMML7kJ06E/tgQydRz2SSJ4/DzDs2eZ86eZ+ua52yHsdrpoIGIuqw+lxs1GKCTg9DdseYLoi8VKdmgnR12P0rkSsns9SbIUFZSkrxyV2cmpCcBLxa8mZDG2IHNderyEzlCKr9CB8dXzfoG2I4j408EtvF8FPXRDpRG4JcRSTL5vYy8Ba6xjVzOxpdPaYPaEnM4dNhDQ8WZf/hEOJMFs082sbfWAUryJEfUcHDXZVJzPR17q2xa4oVD5jSktzKCfRvjeLqZYKcsAgFTU1lfZq3+kiPuFky0FsOQ0EjuGTnxfRWSHso/4cFwpW+q7vY1p2lOVoJO57ATak8iS3Rme23K10dPjMqlm+hxEJPMMH8WOQtnw7d4Q5zPB7seQVqNfP+nuvyE=
-  file: ./target/release/fuzzle
-  skip_cleanup: true
+    secure: OWp3vqM35XFFutekbSd2xOg5cAxrj9fNC8+2BiuGj7HL7ccfsXY1oe72wYHWiGnEV5S3YGQ8gI7WFRcVdy9j0jl0QFchAWSx4IY050bMokCg94M4pNyglcuRC/+yIAQml50gtdy2ujWPutQfw3IzBVRSOxwXcigLAta+UtLFU93gTrcwGwhqQtdLcIUbYYpY64Aob3ZoeOTFK4cnX0oJepqfuXe7iA+fOb4Yel/jhh1hHDcOG6bbFwf+duAZChNUd84drBi2koySBlMR/xNHsM7nv/QbvVMpaihICkglFRar0AhNx3zJC7KWYMJxeWCDoGp1ls7tRG3x/8o0DzuIApuJrWXu73GG0yhkeGRf3d/r6EGiFYeke+HTRCCkcXRxGLfmSB8Fg7HpwIrB7IRMU4aDRzRmEunHtpOxD5fztdsX3Q92geu2SEJPE8mVJnh6/EFe2Wq46Ct1l+CBEputlglsavlaQId7Rt5/wSeWIxFhdYe9JwB0lVYZS5YWi7mffVLuu844SQTEuEYjdbalrXTteZqLImGMCekNagyDRfDfGqMhwe1e1IJLNKNTf7Uxl+Ygl9XbtJTsVmV3yipT0PC184c2lmarB+mL4tT7OSDHlcawwsI1+duZescA1YMmBChvDxD3buMOb8bOgKO84nYUSrLHhhLBQLb/72w41/0=
+  file: target/release/fuzzle
   on:
-    tags: true
     repo: Psykopear/fuzzle
-
