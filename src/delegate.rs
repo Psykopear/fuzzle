@@ -177,7 +177,7 @@ impl AppDelegate<AppState> for Delegate {
                 ke if (HotKey::new(SysMods::Cmd, "j")).matches(ke)
                     || ke.key_code == KeyCode::ArrowDown =>
                 {
-                    data.selected_line = data.selected_line.min(num_results - 2) + 1
+                    data.selected_line = data.selected_line.min(num_results - 2) + 1;
                 }
 
                 ke if (HotKey::new(SysMods::Cmd, "k")).matches(ke)

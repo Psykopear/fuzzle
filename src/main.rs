@@ -39,14 +39,12 @@ fn main() -> Result<(), PlatformError> {
         .configure_env(|env, _| {
             env.set(theme::BORDERED_WIDGET_HEIGHT, 100.);
             env.set(theme::TEXT_SIZE_NORMAL, 20.);
-            env.set(theme::TEXT_SIZE_LARGE, 30.);
             env.set(theme::TEXTBOX_BORDER_RADIUS, 2.);
             env.set(
                 theme::WINDOW_BACKGROUND_COLOR,
                 Color::rgb8(0x39, 0x3d, 0x40),
             );
             env.set(theme::LABEL_COLOR, Color::rgb8(0xf2, 0xf2, 0xf2));
-            env.set(theme::LABEL_SECONDARY_COLOR, Color::rgb8(0xa2, 0xa2, 0xa2));
             env.set(theme::BACKGROUND_LIGHT, Color::rgb8(0x39, 0x3d, 0x40));
         })
         .use_simple_logger()
