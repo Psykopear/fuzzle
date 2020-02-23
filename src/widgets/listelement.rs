@@ -1,7 +1,7 @@
 use druid::kurbo::{Point, Rect, Size};
 use druid::piet::{
-    CairoTextLayout, Color, FontBuilder, InterpolationMode, RenderContext, Text, TextLayout,
-    TextLayoutBuilder, UnitPoint,
+    CairoTextLayout, Color, FontBuilder, InterpolationMode, PietText, RenderContext, Text,
+    TextLayout, TextLayoutBuilder, UnitPoint,
 };
 use druid::{
     BoxConstraints, Env, Event, EventCtx, LayoutCtx, LifeCycle, LifeCycleCtx, PaintCtx, UpdateCtx,
@@ -61,29 +61,27 @@ impl ListElement {
         self.icon_height = height as usize;
     }
 
-    fn resolve(&mut self, ctx: &mut PaintCtx, data: &SearchResult) {
+    fn resolve(&mut self, piet_text: &mut PietText, data: &SearchResult) {
         self.resolve_icon(data);
         let font_name = "sans-serif";
 
-        let name_font = ctx
-            .text()
+        let name_font = piet_text
             .new_font_by_name(font_name, self.name_font_size)
             .build()
             .unwrap();
 
-        let description_font = ctx
-            .text()
+        let description_font = piet_text
             .new_font_by_name(font_name, self.description_font_size)
             .build()
             .unwrap();
         self.name = Some(
-            ctx.text()
+            piet_text
                 .new_text_layout(&name_font, &data.name)
                 .build()
                 .unwrap(),
         );
         self.description = Some(
-            ctx.text()
+            piet_text
                 .new_text_layout(&description_font, &data.description)
                 .build()
                 .unwrap(),
@@ -135,7 +133,7 @@ impl Widget<SearchResult> for ListElement {
     }
 
     fn paint(&mut self, paint_ctx: &mut PaintCtx, search_result: &SearchResult, _env: &Env) {
-        self.resolve(paint_ctx, search_result);
+        self.resolve(paint_ctx.text(), search_result);
         if let Some(data) = &self.icon_data {
             let image = match paint_ctx.make_image(
                 self.icon_width,

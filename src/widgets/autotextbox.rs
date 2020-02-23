@@ -1,31 +1,58 @@
 //! A textbox widget that keeps focus.
-use druid::{
-    BoxConstraints, Env, Event, EventCtx, HotKey, KeyCode, LayoutCtx, LifeCycle, LifeCycleCtx,
-    PaintCtx, SysMods, UpdateCtx, Widget, WidgetPod,
+use druid::kurbo::{Line, Point, RoundedRect, Size, Vec2};
+use druid::piet::{
+    FontBuilder, PietText, PietTextLayout, RenderContext, Text, TextLayout, TextLayoutBuilder,
 };
+use druid::widget::TextBox;
+use druid::{
+    theme, BoxConstraints, Env, Event, EventCtx, HotKey, KeyCode, LayoutCtx, LifeCycle,
+    LifeCycleCtx, PaintCtx, Selector, SysMods, TimerToken, UpdateCtx, Widget,
+};
+use std::time::{Duration, Instant};
 
-use druid::kurbo::Size;
-use druid::piet::UnitPoint;
-use druid::widget::{Align, TextBox};
-
-// const BORDER_WIDTH: f64 = 0.;
-// const PADDING_TOP: f64 = 30.;
-// const PADDING_LEFT: f64 = 30.;
+const PADDING_TOP: f64 = 30.;
+const PADDING_LEFT: f64 = 30.;
+const RESET_BLINK: Selector = Selector::new("reset-autotextbox-blink");
 
 /// A widget that allows user text input.
-// pub struct AutoTextBox {
-//     textbox: WidgetPod<String, Box<dyn Widget<String>>>,
-// }
 pub struct AutoTextBox {
-    textbox: TextBox,
+    textbox: Box<TextBox>,
+    width: f64,
+    cursor_timer: TimerToken,
+    cursor_on: bool,
+    cursor: usize,
 }
 
 impl AutoTextBox {
     /// Create a new AutoTextBox widget
     pub fn new() -> Self {
         Self {
-            textbox: TextBox::raw(),
+            textbox: Box::new(TextBox::raw()),
+            width: 0.0,
+            cursor_timer: TimerToken::INVALID,
+            cursor: 0,
+            cursor_on: true,
         }
+    }
+
+    fn get_layout(&self, piet_text: &mut PietText, text: &str, env: &Env) -> PietTextLayout {
+        let font_name = env.get(theme::FONT_NAME);
+        let font_size = 35.;
+        let font = piet_text
+            .new_font_by_name(font_name, font_size)
+            .build()
+            .unwrap();
+
+        piet_text
+            .new_text_layout(&font, &text.to_string())
+            .build()
+            .unwrap()
+    }
+
+    fn reset_cursor_blink(&mut self, ctx: &mut EventCtx) {
+        self.cursor_on = true;
+        let deadline = Instant::now() + Duration::from_millis(500);
+        self.cursor_timer = ctx.request_timer(deadline);
     }
 }
 
@@ -38,20 +65,47 @@ impl Widget<String> for AutoTextBox {
         match event {
             Event::KeyDown(key_event) => {
                 match key_event {
-                    // TODO: I'm ignoring commands here because if I just
-                    // avoid propagating events in the delegate the app does not repaint
+                    // TODO: Ignoring commands here because if I just
+                    //       avoid propagating events in the delegate
+                    //       the app does not repaint, but that means
+                    //       autotextbox need to know about global keybindings
                     ke if ke.key_code == KeyCode::ArrowDown
                         || (HotKey::new(SysMods::Cmd, "j")).matches(ke) => {}
                     ke if ke.key_code == KeyCode::ArrowUp
                         || (HotKey::new(SysMods::Cmd, "k")).matches(ke) => {}
-                    _ => self.textbox.event(ctx, event, data, env),
+                    // Only allow some of the textbox events, I really only
+                    // need to write and delete with backspace, no selection,
+                    // movement, copy, paste or other stuff.
+                    k_e if k_e.key_code.is_printable() => {
+                        let incoming_text = k_e.text().unwrap_or("");
+                        self.cursor = data.len() + incoming_text.len();
+                        self.reset_cursor_blink(ctx);
+                        self.textbox.event(ctx, event, data, env);
+                    }
+                    k_e if (HotKey::new(None, KeyCode::Backspace)).matches(k_e) => {
+                        self.textbox.event(ctx, event, data, env);
+                    }
+                    _ => (),
                 };
             }
-            _ => self.textbox.event(ctx, event, data, env),
-        }
+            Event::Command(cmd) if cmd.selector == RESET_BLINK => self.reset_cursor_blink(ctx),
+            Event::Timer(id) => {
+                if *id == self.cursor_timer {
+                    self.cursor_on = !self.cursor_on;
+                    ctx.request_paint();
+                    let deadline = Instant::now() + Duration::from_millis(500);
+                    self.cursor_timer = ctx.request_timer(deadline);
+                }
+            }
+            _ => (),
+        };
     }
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &String, env: &Env) {
+        match event {
+            LifeCycle::WidgetAdded => ctx.submit_command(RESET_BLINK, ctx.widget_id()),
+            _ => (),
+        };
         self.textbox.lifecycle(ctx, event, data, env)
     }
 
@@ -67,10 +121,61 @@ impl Widget<String> for AutoTextBox {
         data: &String,
         env: &Env,
     ) -> Size {
+        let default_width = 100.0;
+        if bc.is_width_bounded() {
+            self.width = bc.max().width;
+        } else {
+            self.width = default_width;
+        }
         self.textbox.layout(ctx, bc, data, env)
     }
 
     fn paint(&mut self, paint_ctx: &mut PaintCtx, data: &String, env: &Env) {
-        self.textbox.paint(paint_ctx, data, env);
+        let font_size = 35.;
+        let height = 75.;
+        let text_color = env.get(theme::LABEL_COLOR);
+
+        // Paint the background
+        let clip_rect = RoundedRect::from_origin_size(
+            Point::ORIGIN,
+            Size::new(self.width, height).to_vec2(),
+            env.get(theme::TEXTBOX_BORDER_RADIUS),
+        );
+
+        // Render text, selection, and cursor inside a clip
+        paint_ctx
+            .with_save(|rc| {
+                rc.clip(clip_rect);
+
+                // Calculate layout
+                let text_layout = self.get_layout(rc.text(), &data, env);
+
+                // Shift everything inside the clip by the hscroll_offset
+                // ctx.transform(Affine::translate((-self.textbox.hscroll_offset, 0.)));
+
+                // Layout, measure, and draw text
+                let text_height = font_size * 0.8;
+                let text_pos = Point::new(0.0 + PADDING_LEFT, text_height + PADDING_TOP);
+                let color = &text_color;
+
+                rc.draw_text(&text_layout, text_pos, color);
+
+                // Paint the cursor
+                if self.cursor_on {
+                    let cursor_x =
+                        if let Some(position) = text_layout.hit_test_text_position(self.cursor) {
+                            position.point.x
+                        } else {
+                            0.0
+                        };
+                    let xy = text_pos + Vec2::new(cursor_x, 2. - font_size);
+                    let x2y2 = xy + Vec2::new(0., font_size + 2.);
+                    let line = Line::new(xy, x2y2);
+
+                    rc.stroke(line, &text_color, 1.);
+                }
+                Ok(())
+            })
+            .unwrap();
     }
 }
