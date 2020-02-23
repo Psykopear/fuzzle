@@ -1,0 +1,20 @@
+language: rust
+rust:
+  - stable
+cache: cargo
+script:
+  - cargo build --release --all
+deploy:
+  provider: releases
+  api_key:
+    secure: XQ01dbOdLrFnrNJUF5r2phd5Li3V6QnDSziIvhiYsLTNSWNlMZX2Ewgbe8bKlRyPjqn4VUEQ5TNgkTcLRaZVdwDJ7LN/j4HaHxabSg1A82br/SSE5zomS1Ul12F2KM56F1JHxgfippweJQVaYRWrb+JxDwOITAsU0f65nu9vwVtmi/sN39WDN+IcAKyLeqmA4gMLPm/Dcq+kG4/sqxpAfq1cmrGTZpqfNivVISnwVjG+t0yZ9RMlX3yR5PNPR5U7PX2t04YRgxenuKgQ308h3Zw5gE2CRBCiBlpyRnMML7kJ06E/tgQydRz2SSJ4/DzDs2eZ86eZ+ua52yHsdrpoIGIuqw+lxs1GKCTg9DdseYLoi8VKdmgnR12P0rkSsns9SbIUFZSkrxyV2cmpCcBLxa8mZDG2IHNderyEzlCKr9CB8dXzfoG2I4j408EtvF8FPXRDpRG4JcRSTL5vYy8Ba6xjVzOxpdPaYPaEnM4dNhDQ8WZf/hEOJMFs082sbfWAUryJEfUcHDXZVJzPR17q2xa4oVD5jSktzKCfRvjeLqZYKcsAgFTU1lfZq3+kiPuFky0FsOQ0EjuGTnxfRWSHso/4cFwpW+q7vY1p2lOVoJO57ATak8iS3Rme23K10dPjMqlm+hxEJPMMH8WOQtnw7d4Q5zPB7seQVqNfP+nuvyE=
+  file: ./target/release/fuzzle
+  skip_cleanup: true
+  on:
+    tags: true
+    repo: Psykopear/fuzzle
+
+matrix:
+  include:
+    # Linux
+    - env: TARGET=x86_64-unknown-linux-gnu
