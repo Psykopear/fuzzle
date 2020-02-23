@@ -27,7 +27,7 @@ fn make_ui() -> impl Widget<AppState> {
 fn main() -> Result<(), PlatformError> {
     let main_window = WindowDesc::new(make_ui)
         .window_size((550., 320.00))
-        .title(LocalizedString::new("launcherrr").with_placeholder(String::from("launcherrr")));
+        .title(LocalizedString::new("fuzzle").with_placeholder(String::from("fuzzle")));
     let data = AppState {
         input_text: "".into(),
         search_results: Arc::new(vec![]),

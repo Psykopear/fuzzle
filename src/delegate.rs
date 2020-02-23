@@ -25,7 +25,7 @@ impl Delegate {
     pub fn new() -> Self {
         Self {
             matcher: SkimMatcherV2::default(),
-            cache: match fs::File::open("/tmp/launcherrr_cache.bincode") {
+            cache: match fs::File::open("/tmp/fuzzle_cache.bincode") {
                 Ok(file) => match bincode::deserialize_from::<fs::File, Delegate>(file) {
                     Ok(delegate) => delegate.cache,
                     Err(_) => vec![],
@@ -114,7 +114,7 @@ impl Delegate {
             .collect();
 
         // Reset search results
-        if let Ok(file) = fs::File::create("/tmp/launcherrr_cache.bincode") {
+        if let Ok(file) = fs::File::create("/tmp/fuzzle_cache.bincode") {
             bincode::serialize_into(file, self).unwrap();
         }
     }
