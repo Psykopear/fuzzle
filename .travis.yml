@@ -17,9 +17,8 @@ deploy:
   provider: releases
   api_key:
     secure: OWp3vqM35XFFutekbSd2xOg5cAxrj9fNC8+2BiuGj7HL7ccfsXY1oe72wYHWiGnEV5S3YGQ8gI7WFRcVdy9j0jl0QFchAWSx4IY050bMokCg94M4pNyglcuRC/+yIAQml50gtdy2ujWPutQfw3IzBVRSOxwXcigLAta+UtLFU93gTrcwGwhqQtdLcIUbYYpY64Aob3ZoeOTFK4cnX0oJepqfuXe7iA+fOb4Yel/jhh1hHDcOG6bbFwf+duAZChNUd84drBi2koySBlMR/xNHsM7nv/QbvVMpaihICkglFRar0AhNx3zJC7KWYMJxeWCDoGp1ls7tRG3x/8o0DzuIApuJrWXu73GG0yhkeGRf3d/r6EGiFYeke+HTRCCkcXRxGLfmSB8Fg7HpwIrB7IRMU4aDRzRmEunHtpOxD5fztdsX3Q92geu2SEJPE8mVJnh6/EFe2Wq46Ct1l+CBEputlglsavlaQId7Rt5/wSeWIxFhdYe9JwB0lVYZS5YWi7mffVLuu844SQTEuEYjdbalrXTteZqLImGMCekNagyDRfDfGqMhwe1e1IJLNKNTf7Uxl+Ygl9XbtJTsVmV3yipT0PC184c2lmarB+mL4tT7OSDHlcawwsI1+duZescA1YMmBChvDxD3buMOb8bOgKO84nYUSrLHhhLBQLb/72w41/0=
-  file: target/release/fuzzle
+  file: ./target/release/fuzzle
+  skip_cleanup: true
   on:
+    tags: true
     repo: Psykopear/fuzzle
-    branches:
-      only:
-        - master
