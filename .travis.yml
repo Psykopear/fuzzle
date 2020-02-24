@@ -5,6 +5,7 @@ matrix:
   include:
   - os: linux
     rust: stable
+
 script:
 - cargo build --release --all
 addons:
@@ -19,3 +20,6 @@ deploy:
   file: target/release/fuzzle
   on:
     repo: Psykopear/fuzzle
+  branches:
+    only:
+      - master
