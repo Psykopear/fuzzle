@@ -7,7 +7,7 @@ matrix:
     rust: stable
 
 script:
-- cargo build --release --all
+  - cargo build --release --all
 addons:
   apt:
     packages:
@@ -20,6 +20,6 @@ deploy:
   file: target/release/fuzzle
   on:
     repo: Psykopear/fuzzle
-  branches:
-    only:
-      - master
+    branches:
+      only:
+        - master
