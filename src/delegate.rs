@@ -168,7 +168,9 @@ impl AppDelegate<AppState> for Delegate {
             match key_event {
                 ke if ke.key_code == KeyCode::Escape => std::process::exit(0),
                 ke if ke.key_code == KeyCode::Return => {
-                    let command = data.search_results[data.selected_line].command.clone();
+                    // TODO: use data.selected_line. The unwrap should never panic here,
+                    // but it's not nice anyway
+                    let command = results.iter().find(|r| r.selected).unwrap().command.clone();
                     let command = command.split_whitespace().next().unwrap();
                     if std::process::Command::new(command).spawn().is_ok() {
                         std::process::exit(0)
