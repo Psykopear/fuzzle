@@ -4,6 +4,11 @@ Fuzzle aims to be a really fast application launcher with fuzzy search.
 
 ![screen](screen.png)
 
+# Note
+The project is in a very early stage and things will change and break often for a while.
+If you are looking for a working launcher, this project is inspired by:
+- [Ulauncher](https://github.com/Ulauncher/Ulauncher)
+- [rofi](https://github.com/davatorium/rofi)
 
 # Usage
 
