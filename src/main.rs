@@ -15,6 +15,8 @@ use state::{AppState, SearchResult};
 mod delegate;
 use delegate::Delegate;
 
+mod dirutils;
+
 fn make_ui() -> impl Widget<AppState> {
     Flex::column()
         .with_child(AutoTextBox::new().lens(AppState::input_text), 1.)

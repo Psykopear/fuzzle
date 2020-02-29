@@ -4,15 +4,15 @@ use std::sync::Arc;
 
 use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
-use ini::Ini;
 use serde::{Deserialize, Serialize};
-use walkdir::WalkDir;
 
 use druid::{
     AppDelegate, Command, DelegateCtx, Env, Event, HotKey, KeyCode, SysMods, Target, WindowId,
 };
 
 use crate::{AppState, SearchResult};
+
+use crate::dirutils::build_cache;
 
 #[derive(Serialize, Deserialize)]
 pub struct Delegate {
@@ -35,84 +35,8 @@ impl Delegate {
         }
     }
 
-    fn populate_entry(&mut self, path: &Path) -> Option<SearchResult> {
-        let info = Ini::load_from_file(path).unwrap();
-        let section = match info.section(Some("Desktop Entry")) {
-            Some(sec) => sec,
-            None => return None,
-        };
-        let name = match section.get("Name") {
-            Some(name) => name.to_string(),
-            None => return None,
-        };
-        let description = match section.get("Comment") {
-            Some(description) => description.to_string(),
-            None => return None,
-        };
-        let icon = match section.get("Icon") {
-            Some(icon) => icon,
-            None => return None,
-        };
-        let command = match section.get("Exec") {
-            Some(command) => command.to_string(),
-            None => return None,
-        };
-
-        // TODO: Ideally the user should be able to configure
-        //       a default theme a some fallback themes
-        //
-        // First search a default theme
-        let icon_entry = WalkDir::new("/usr/share/icons/hicolor/48x48")
-            .into_iter()
-            .filter_map(|e| e.ok())
-            .find(|e| e.path().file_stem().unwrap() == icon);
-
-        // If we can't find the icon, search any theme.
-        // Even though WalkDir is quite fast, this can become slow if there are
-        // a lot of themes
-        let icon_entry = match icon_entry {
-            Some(icon_entry) => Some(icon_entry),
-            None => {
-                let mut res = None;
-                for icon_theme in std::fs::read_dir("/usr/share/icons/").unwrap() {
-                    let mut icon_theme_path = icon_theme.unwrap().path();
-                    icon_theme_path.push("48x48");
-
-                    res = WalkDir::new(icon_theme_path)
-                        .into_iter()
-                        .filter_map(|e| e.ok())
-                        .find(|e| e.path().file_stem().unwrap() == icon);
-
-                    if res.is_some() {
-                        break;
-                    }
-                }
-                res
-            }
-        };
-
-        let icon_path = match icon_entry {
-            Some(entry) => Some(String::from(entry.path().to_str().unwrap())),
-            None => None,
-        };
-        Some(SearchResult {
-            icon_path,
-            path: String::from(path.to_str().unwrap()),
-            name,
-            description,
-            command,
-            score: 0,
-            selected: false,
-            indices: vec![],
-        })
-    }
-
     fn populate_cache(&mut self) {
-        self.cache = fs::read_dir("/usr/share/applications/")
-            .expect("Can't find /usr/share/applications/, I'll just die")
-            .filter_map(|path| self.populate_entry(&path.unwrap().path()))
-            .collect();
-
+        self.cache = build_cache();
         // Reset search results
         if let Ok(file) = fs::File::create("/tmp/fuzzle_cache.bincode") {
             bincode::serialize_into(file, self).unwrap();
@@ -125,12 +49,23 @@ impl Delegate {
             .cache
             .iter()
             .filter_map(|sr| {
-                let result = self.matcher.fuzzy_indices(&sr.name, &data.input_text);
+                let mut search_name = String::from(&sr.name);
+                if let Some(file_name) =
+                    Path::new(sr.desktop_entry_path.as_ref().unwrap_or(&"".to_string())).file_stem()
+                {
+                    search_name = search_name + " " + file_name.to_str().unwrap_or("");
+                };
+                let result = self.matcher.fuzzy_indices(&search_name, &data.input_text);
 
                 if let Some((score, indices)) = result {
                     Some(SearchResult {
-                        score,
-                        indices,
+                        // Always put desktop entry files first
+                        score: if sr.desktop_entry_path.is_some() {
+                            score + 1000
+                        } else {
+                            score
+                        },
+                        indices: Arc::new(indices),
                         selected: false,
                         ..sr.clone()
                     })
@@ -139,8 +74,10 @@ impl Delegate {
                 }
             })
             .collect();
+
         // Now order by score, descending
         res.sort_unstable_by_key(|a| -a.score);
+
         // Select the line
         let len = res.len();
         if len > data.selected_line {

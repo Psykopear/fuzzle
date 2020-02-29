@@ -5,7 +5,7 @@ use std::sync::Arc;
 #[derive(Clone, Debug, Data, PartialEq, Serialize, Deserialize, Lens)]
 pub struct SearchResult {
     pub icon_path: Option<String>,
-    pub path: String,
+    pub desktop_entry_path: Option<String>,
     pub name: String,
     pub description: String,
     pub command: String,
@@ -15,8 +15,7 @@ pub struct SearchResult {
     #[serde(skip)]
     pub score: i64,
     #[serde(skip)]
-    #[druid(ignore)]
-    pub indices: Vec<usize>,
+    pub indices: Arc<Vec<usize>>,
 }
 
 #[derive(Clone, Data, Lens)]

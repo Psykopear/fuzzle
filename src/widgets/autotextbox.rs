@@ -97,11 +97,12 @@ impl AutoTextBox {
 
 impl Widget<String> for AutoTextBox {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, data: &mut String, env: &Env) {
-        // // Ensure this widget always has focus
-        ctx.set_active(true);
-        ctx.request_focus();
-
         match event {
+            Event::WindowConnected => {
+                ctx.submit_command(RESET_BLINK, ctx.widget_id());
+                ctx.set_active(true);
+                ctx.request_focus();
+            }
             Event::KeyDown(key_event) => {
                 match key_event {
                     // TODO: Ignoring commands here because if I just
@@ -145,10 +146,6 @@ impl Widget<String> for AutoTextBox {
     }
 
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &String, env: &Env) {
-        match event {
-            LifeCycle::WidgetAdded => ctx.submit_command(RESET_BLINK, ctx.widget_id()),
-            _ => (),
-        };
         self.textbox.lifecycle(ctx, event, data, env)
     }
 
