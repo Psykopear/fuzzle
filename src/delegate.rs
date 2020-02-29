@@ -114,12 +114,16 @@ impl AppDelegate<AppState> for Delegate {
                     }
                 }
                 ke if (HotKey::new(SysMods::Cmd, "j")).matches(ke)
+                    || (HotKey::new(SysMods::Cmd, "n")).matches(ke)
+                    || (!ke.mods.shift && (ke.key_code == KeyCode::Tab))
                     || ke.key_code == KeyCode::ArrowDown =>
                 {
                     data.selected_line = data.selected_line.min(num_results - 2) + 1;
                 }
 
                 ke if (HotKey::new(SysMods::Cmd, "k")).matches(ke)
+                    || (HotKey::new(SysMods::Cmd, "p")).matches(ke)
+                    || (ke.mods.shift && (ke.key_code == KeyCode::Tab))
                     || ke.key_code == KeyCode::ArrowUp =>
                 {
                     data.selected_line = data.selected_line.max(1) - 1;

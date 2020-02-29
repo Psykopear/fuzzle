@@ -110,9 +110,11 @@ impl Widget<String> for AutoTextBox {
                     //       the app does not repaint, but that means
                     //       autotextbox need to know about global keybindings
                     ke if ke.key_code == KeyCode::ArrowDown
-                        || (HotKey::new(SysMods::Cmd, "j")).matches(ke) => {}
-                    ke if ke.key_code == KeyCode::ArrowUp
-                        || (HotKey::new(SysMods::Cmd, "k")).matches(ke) => {}
+                        || ke.key_code == KeyCode::ArrowUp
+                        || (HotKey::new(SysMods::Cmd, "j")).matches(ke)
+                        || (HotKey::new(SysMods::Cmd, "k")).matches(ke)
+                        || (HotKey::new(SysMods::Cmd, "n")).matches(ke)
+                        || (HotKey::new(SysMods::Cmd, "p")).matches(ke) => {}
                     // Only allow some of the textbox events, I really only
                     // need to write and delete with backspace, no selection,
                     // movement, copy, paste or other stuff.
