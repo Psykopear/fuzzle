@@ -1,4 +1,5 @@
 use ini::Ini;
+use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -141,25 +142,22 @@ pub fn build_cache() -> Vec<SearchResult> {
             );
         }
     }
+
     // Now build SearchResults for all binaries we can find
-    for dir in &["/usr/bin", "/usr/local/bin"] {
-        if let Ok(dir) = fs::read_dir(dir) {
-            results.append(
-                &mut dir
-                    .filter_map(|path| searchresult_from_bin(&path.unwrap().path()))
-                    .collect(),
-            );
+    let key = "PATH";
+    match env::var_os(key) {
+        Some(paths) => {
+            for path in env::split_paths(&paths) {
+                if let Ok(entries) = fs::read_dir(path) {
+                    results.append(
+                        &mut entries
+                            .filter_map(|path| searchresult_from_bin(&path.unwrap().path()))
+                            .collect(),
+                    );
+                }
+            }
         }
-    }
-    if let Ok(home) = std::env::var("HOME") {
-        let dir = format!("{}/.local/bin", home);
-        if let Ok(dir) = fs::read_dir(dir) {
-            results.append(
-                &mut dir
-                    .filter_map(|path| searchresult_from_bin(&path.unwrap().path()))
-                    .collect(),
-            );
-        }
+        None => println!("{} is not defined in the environment.", key)
     }
     // That's it, return
     results
