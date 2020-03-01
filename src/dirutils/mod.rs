@@ -24,7 +24,9 @@ fn search_icon(icon: &str) -> Option<String> {
         .map(|dd| dd.join("icons").to_str().unwrap().to_string())
         .collect();
     // Add $HOME/.icons
-    data_dirs.insert(0, "/home/docler/.icons".to_string());
+    if let Ok(home) = std::env::var("HOME") {
+        data_dirs.insert(0, format!("{}/.icons", home));
+    }
 
     for dir in data_dirs {
         if let Ok(dirs) = fs::read_dir(dir) {
@@ -131,21 +133,33 @@ pub fn build_cache() -> Vec<SearchResult> {
     // Build SearchResults for all desktop files we can find
     for mut data_dir in search_dirs() {
         data_dir.push("applications");
-        results.append(
-            &mut fs::read_dir(data_dir)
-                .expect("Can't find data dir")
-                .filter_map(|path| searchresult_from_desktopentry(&path.unwrap().path()))
-                .collect(),
-        );
+        if let Ok(data_dir) = fs::read_dir(data_dir) {
+            results.append(
+                &mut data_dir
+                    .filter_map(|path| searchresult_from_desktopentry(&path.unwrap().path()))
+                    .collect(),
+            );
+        }
     }
     // Now build SearchResults for all binaries we can find
-    for dir in &["/usr/bin", "/usr/local/bin", "/home/docler/.local/bin/"] {
-        results.append(
-            &mut fs::read_dir(dir)
-                .expect("Can't find /usr/bin")
-                .filter_map(|path| searchresult_from_bin(&path.unwrap().path()))
-                .collect(),
-        );
+    for dir in &["/usr/bin", "/usr/local/bin"] {
+        if let Ok(dir) = fs::read_dir(dir) {
+            results.append(
+                &mut dir
+                    .filter_map(|path| searchresult_from_bin(&path.unwrap().path()))
+                    .collect(),
+            );
+        }
+    }
+    if let Ok(home) = std::env::var("HOME") {
+        let dir = format!("{}/.local/bin", home);
+        if let Ok(dir) = fs::read_dir(dir) {
+            results.append(
+                &mut dir
+                    .filter_map(|path| searchresult_from_bin(&path.unwrap().path()))
+                    .collect(),
+            );
+        }
     }
     // That's it, return
     results
