@@ -15,6 +15,7 @@ Fuzzle aims to be a really fast application launcher with fuzzy search.
 - Does not search through your passwords!
 - Does not handle your wifi connection!
 - Does not translate between languages!
+- Does not work as a calculator!
 
 # Note
 The project is in a very early stage and things will change and break often for a while.
@@ -42,3 +43,6 @@ Build with:
 ```
 cargo build --release
 ```
+
+# Credits
+Background by Valentyn Ihnatov on Unsplash
